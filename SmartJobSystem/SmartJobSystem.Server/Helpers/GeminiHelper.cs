@@ -7,7 +7,7 @@ namespace SmartJobAPI.Helpers
     public class GeminiHelper
     {
         private readonly HttpClient _http = new HttpClient();
-        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";
+        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";//a added extra
 
         public async Task<AiResumeResult> Generate(ProfileDto profile)
         {

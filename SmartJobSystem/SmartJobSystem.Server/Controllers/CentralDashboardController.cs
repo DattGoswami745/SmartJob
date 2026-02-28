@@ -37,7 +37,7 @@ namespace SmartJobSystem.Server.Controllers
                     totalPlaced = GetTotalPlaced(con)
                 },
                 recentApplications = GetRecentApplications(con),
-                monthlyChart = GetMonthlyChartData(con)
+                dailyChart = GetDailyChartData(con)
             };
 
             return Ok(response);
@@ -104,19 +104,19 @@ namespace SmartJobSystem.Server.Controllers
             return list;
         }
 
-        // ✅ MONTHLY CHART DATA
-        private List<object> GetMonthlyChartData(SqlConnection con)
+        // ✅ DAILY CHART DATA
+        private List<object> GetDailyChartData(SqlConnection con)
         {
             var list = new List<object>();
 
             var cmd = new SqlCommand(@"
-                SELECT 
-                    FORMAT(A.AppliedDate, 'yyyy-MM') AS Month,
+                SELECT TOP 30
+                    FORMAT(A.AppliedDate, 'yyyy-MM-dd') AS Day,
                     COUNT(*) AS TotalApplications,
                     SUM(CASE WHEN A.ApplicationStatus = 'Placed' THEN 1 ELSE 0 END) AS TotalPlaced
                 FROM Applications A
-                GROUP BY FORMAT(A.AppliedDate, 'yyyy-MM')
-                ORDER BY Month
+                GROUP BY FORMAT(A.AppliedDate, 'yyyy-MM-dd')
+                ORDER BY Day
             ", con);
 
             using var reader = cmd.ExecuteReader();
@@ -125,7 +125,7 @@ namespace SmartJobSystem.Server.Controllers
             {
                 list.Add(new
                 {
-                    month = reader["Month"],
+                    day = reader["Day"],
                     totalApplications = reader["TotalApplications"],
                     totalPlaced = reader["TotalPlaced"]
                 });

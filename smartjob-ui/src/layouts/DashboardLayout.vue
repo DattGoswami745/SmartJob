@@ -2,7 +2,7 @@
   <div class="d-flex min-vh-100">
     <Sidebar />
 
-    <div class="flex-grow-1 p-4 content-area">
+    <div class="flex-grow-1 p-4 content-area" style="margin-left: 240px; overflow-x: hidden;">
       <router-view />
     </div>
   </div>

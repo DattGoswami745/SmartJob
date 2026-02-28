@@ -3,7 +3,7 @@
 
     <!-- MENU -->
     <div>
-      <h4 class="text-center mb-4">SmartJob Admin</h4>
+      <h4 class="text-center mb-4">SmartJob Central</h4>
 
       <ul class="nav flex-column">
         <li v-for="item in menu" :key="item.name" class="nav-item">
@@ -16,12 +16,7 @@
     </div>
 
     <!-- BOTTOM ICONS -->
-    <div class="d-flex justify-content-between px-2">
-      
-      <!-- THEME TOGGLE -->
-      <button class="icon-btn" @click="toggleTheme" title="Theme">
-        <Settings size="20" />
-      </button>
+    <div class="d-flex justify-content-end px-2">
 
       <!-- LOGOUT -->
       <button class="icon-btn logout" title="Logout" @click="logout">
@@ -63,6 +58,7 @@ const isDark = ref(false)
 onMounted(() => {
   document.body.classList.remove("theme-dark")
   document.body.classList.add("theme-light")
+  isDark.value = false
 })
 
 /* Theme Toggle */
@@ -88,9 +84,14 @@ function logout() {
 <style scoped>
 .sidebar {
   width: 240px;
-  min-height: 100vh;
-  background: #1f2937;
-  color: white;
+  min-width: 240px;
+  max-width: 240px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  background: var(--sidebar-bg); /* Use the global sidebar background variable */
+  color: var(--sidebar-text);
+  overflow-y: auto;
 }
 
 .sidebar-link {

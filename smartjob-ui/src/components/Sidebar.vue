@@ -95,7 +95,12 @@ function logout() {
 <style scoped>
 .sidebar {
   width: 240px;
-  min-height: 100vh;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  overflow-y: auto;
 }
 
 .sidebar-link {

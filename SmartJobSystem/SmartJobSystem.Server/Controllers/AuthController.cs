@@ -86,7 +86,7 @@ namespace SmartJobAPI.Controllers
 
             // ✅ VERY IMPORTANT: create empty UserProfile
             var insertProfile = new SqlCommand(@"
-                INSERT INTO UserProfile (UserId)
+                INSERT INTO UserProfiles (UserId)
                 VALUES (@UserId)
             ", con);
 

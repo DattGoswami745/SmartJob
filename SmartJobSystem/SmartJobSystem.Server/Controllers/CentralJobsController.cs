@@ -48,5 +48,31 @@ namespace SmartJobSystem.Server.Controllers
                 jobId = newId
             });
         }
+
+        // ============================================
+        // UPDATE JOB
+        // ============================================
+        [HttpPut("update/{jobId}")]
+        public async Task<IActionResult> UpdateJob(int jobId, [FromBody] Job job)
+        {
+            if (job == null)
+                return BadRequest("Invalid job data");
+
+            if (string.IsNullOrWhiteSpace(job.Title))
+                return BadRequest("Job Title is required");
+
+            if (job.CompanyId <= 0)
+                return BadRequest("CompanyId is required");
+
+            bool updated = await _db.UpdateJobAsync(jobId, job);
+
+            if (!updated)
+                return NotFound("Job not found or could not be updated");
+
+            return Ok(new
+            {
+                message = "Job Updated Successfully"
+            });
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace SmartJobAPI.Helpers
         private readonly HttpClient _http = new HttpClient();
 
         // 🔑 YOUR API KEY
-        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";
+        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";//a added extra
 
         public async Task<string> Ask(List<ChatMessage> conversation)
         {

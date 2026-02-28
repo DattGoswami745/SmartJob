@@ -126,14 +126,60 @@ export async function downloadResumeFile(resume) {
     body: JSON.stringify({
       fullName: resume.fullName,
       email: resume.email,
-      summary: resume.summary.map(x => x.text),
-      skills: resume.skills.map(x => x.text),
-      experience: resume.experience.map(x => x.text)
+      sections: resume.sections.map(sec => ({
+        title: sec.title,
+        items: sec.items.map(x => x.text)
+      }))
     })
   })
 
   if (!res.ok) throw new Error(await res.text())
 
+  // If successful, extract the file blob and trigger a browser download
+  return await res.blob()
+}
+
+export async function downloadResumePdf(resume) {
+  const res = await fetch(`${BASE}/resume/download-pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      fullName: resume.fullName,
+      email: resume.email,
+      sections: resume.sections.map(sec => ({
+        title: sec.title,
+        items: sec.items.map(x => x.text)
+      }))
+    })
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+
+  return await res.blob()
+}
+
+export async function downloadResumeFileHtml(htmlContent) {
+  const res = await fetch(`${BASE}/resume/download-html`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ html: htmlContent })
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.blob()
+}
+
+export async function downloadResumePdfHtml(htmlContent) {
+  const res = await fetch(`${BASE}/resume/download-pdf-html`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ html: htmlContent })
+  })
+
+  if (!res.ok) throw new Error(await res.text())
   return await res.blob()
 }
 
@@ -183,6 +229,81 @@ export async function getAllApplications() {
   return await res.json()
 }
 
+export async function deleteCentralApplication(appId) {
+  const res = await fetch(`${BASE}/central/applications/${appId}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getUserProfileForAdmin(userId) {
+  const res = await fetch(`${BASE}/central/applications/profile/${userId}`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) {
+    if (res.status === 404) return null // handle no profile easily 
+    throw new Error(await res.text())
+  }
+  return await res.json()
+}
+
+/* ===================== CENTRAL USERS ===================== */
+
+export async function getCentralUsers() {
+  const res = await fetch(`${BASE}/central/users`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function deleteCentralUser(userId) {
+  const res = await fetch(`${BASE}/central/users/${userId}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getUserActivityLogs(userId) {
+  const res = await fetch(`${BASE}/central/users/${userId}/activity`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+/* ===================== CENTRAL REPORTS ===================== */
+
+// Note: This triggers a raw file download rather than returning parsed JSON data.
+export async function downloadJobReport(jobId) {
+  const res = await fetch(`${BASE}/central/reports/job/${jobId}`)
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("No applicants found for this job.")
+    throw new Error(await res.text())
+  }
+
+  // If successful, extract the file blob and trigger a browser download
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `JobReport_${jobId}.xls`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 /* ===================== CENTRAL JOBS ===================== */
 
 export async function getCentralJobs() {
@@ -197,6 +318,18 @@ export async function getCentralJobs() {
 export async function addJob(job) {
   const res = await fetch(`${BASE}/central/jobs/add`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(job)
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function updateJob(jobId, job) {
+  const res = await fetch(`${BASE}/central/jobs/update/${jobId}`, {
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(job)

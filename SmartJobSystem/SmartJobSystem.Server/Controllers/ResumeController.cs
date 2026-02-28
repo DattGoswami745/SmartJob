@@ -86,20 +86,23 @@ public class ResumeController : ControllerBase
             mainPart.Document = new Document();
             var body = new Body();
 
-            body.Append(CreateHeading(resume.FullName, 32));
-            body.Append(CreateParagraph(resume.Email));
+            body.Append(CreateNameHeading(resume.FullName));
+            body.Append(CreateContactInfo(resume.Email));
 
-            body.Append(CreateHeading("Professional Summary"));
-            foreach (var s in resume.Summary)
-                body.Append(CreateBullet(s));
-
-            body.Append(CreateHeading("Skills"));
-            foreach (var s in resume.Skills)
-                body.Append(CreateBullet(s));
-
-            body.Append(CreateHeading("Experience"));
-            foreach (var e in resume.Experience)
-                body.Append(CreateBullet(e));
+            if (resume.Sections != null)
+            {
+                foreach (var section in resume.Sections)
+                {
+                    body.Append(CreateSectionTitle(section.Title));
+                    if (section.Items != null)
+                    {
+                        foreach (var item in section.Items)
+                        {
+                            body.Append(CreateBullet(item));
+                        }
+                    }
+                }
+            }
 
             mainPart.Document.Append(body);
             mainPart.Document.Save();
@@ -111,22 +114,55 @@ public class ResumeController : ControllerBase
     }
 
     // ===== WORD HELPERS =====
-    private Paragraph CreateHeading(string text, int size = 24)
+    private Paragraph CreateNameHeading(string text)
     {
-        return new Paragraph(
-            new Run(
-                new RunProperties(new Bold(), new FontSize() { Val = size.ToString() }),
-                new Text(text ?? "")));
+        var p = new Paragraph(new ParagraphProperties(new Justification() { Val = JustificationValues.Center }));
+        p.Append(new Run(
+            new RunProperties(new Bold(), new FontSize() { Val = "48" }, new Color() { Val = "1f3864" }), 
+            new Text(text ?? "")));
+        return p;
     }
 
-    private Paragraph CreateParagraph(string text)
+    private Paragraph CreateContactInfo(string text)
     {
-        return new Paragraph(new Run(new Text(text ?? "")));
+        var p = new Paragraph(new ParagraphProperties(
+            new Justification() { Val = JustificationValues.Center },
+            new SpacingBetweenLines() { After = "400" })); // Add space after header
+        p.Append(new Run(
+            new RunProperties(new FontSize() { Val = "22" }, new Color() { Val = "595959" }), 
+            new Text(text ?? "")));
+        return p;
+    }
+
+    private Paragraph CreateSectionTitle(string text)
+    {
+        var pProperties = new ParagraphProperties(
+            new SpacingBetweenLines() { Before = "400", After = "100" }, 
+            new ParagraphBorders(new BottomBorder() { Val = BorderValues.Single, Size = 12, Space = 1, Color = "1f3864" })
+        );
+        var p = new Paragraph(pProperties);
+        p.Append(new Run(
+            new RunProperties(new Bold(), new FontSize() { Val = "28" }, new Caps(), new Color() { Val = "1f3864" }), 
+            new Text(text ?? "")));
+        return p;
     }
 
     private Paragraph CreateBullet(string text)
     {
-        return new Paragraph(new Run(new Text("• " + (text ?? ""))));
+        var pProperties = new ParagraphProperties(
+            new Indentation() { Left = "360", Hanging = "360" },
+            new SpacingBetweenLines() { Before = "80", After = "80" }
+        );
+        var p = new Paragraph(pProperties);
+        
+        var bulletRun = new Run(new Text("•\t")); 
+        bulletRun.RunProperties = new RunProperties(new RunFonts() { Ascii = "Symbol" });
+
+        var textRun = new Run(new RunProperties(new FontSize() { Val = "22" }), new Text(text ?? ""));
+
+        p.Append(bulletRun);
+        p.Append(textRun);
+        return p;
     }
 }
 
@@ -141,11 +177,15 @@ public class ProfileDto
     public int ExperienceYears { get; set; }
 }
 
+public class ResumeSectionDto
+{
+    public string Title { get; set; }
+    public List<string> Items { get; set; }
+}
+
 public class ResumeDownloadDto
 {
     public string FullName { get; set; }
     public string Email { get; set; }
-    public List<string> Summary { get; set; }
-    public List<string> Skills { get; set; }
-    public List<string> Experience { get; set; }
+    public List<ResumeSectionDto> Sections { get; set; }
 }

@@ -11,5 +11,8 @@ namespace SmartJobSystem.Server.Models
         public string SalaryRange { get; set; }
         public DateTime PostedDate { get; set; }
         public bool IsActive { get; set; }
+
+        // Optional property for UI display
+        public string CompanyName { get; set; }
     }
 }

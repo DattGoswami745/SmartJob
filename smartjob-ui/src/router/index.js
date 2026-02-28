@@ -20,9 +20,9 @@ import Chat from "@/views/Chat.vue"
 /* Central Recruiter Pages */
 import CentralDashboard from "@/views/central/Dashboard.vue"
 import CentralJobs from "@/views/central/Jobs.vue"
-// import CentralApplications from "@/views/central/Applications.vue"
-// import CentralUsers from "@/views/central/Users.vue"
-// import CentralReports from "@/views/central/Reports.vue"
+import CentralApplications from "@/views/central/Applications.vue"
+import CentralUsers from "@/views/central/Users.vue"
+import CentralReports from "@/views/central/Reports.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -66,9 +66,9 @@ const routes = [
     children: [
       { path: "dashboard", component: CentralDashboard },
       { path: "jobs", component: CentralJobs },
-      // { path: "applications", component: CentralApplications },
-      // { path: "users", component: CentralUsers },
-      // { path: "reports", component: CentralReports }
+      { path: "applications", component: CentralApplications },
+      { path: "users", component: CentralUsers },
+      { path: "reports", component: CentralReports }
     ]
   }
 ]

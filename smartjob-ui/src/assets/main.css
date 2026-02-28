@@ -4,13 +4,17 @@
 
 /* ===================== LIGHT MODE ===================== */
 body.theme-light {
-  --bg-main: #F9FAFB;             /* off-white background */
+  --bg-main: #F0F4F8;
+  /* softer slate-blue tinted background */
   --bg-card: #FFFFFF;
 
-  --sidebar-bg: #0F172A;          /* dark sidebar */
+  --sidebar-bg: #1E293B;
+  /* slightly lighter dark sidebar */
   --sidebar-text: #FFFFFF;
-  --sidebar-hover-bg: #2563EB;    /* blue hover */
-  --sidebar-hover-text: #000000;  /* black text on hover */
+  --sidebar-hover-bg: #2563EB;
+  /* blue hover */
+  --sidebar-hover-text: #000000;
+  /* black text on hover */
 
   --text-main: #000000;
   --text-muted: #555;
@@ -23,8 +27,9 @@ body.theme-light {
 
   --border: #E5E7EB;
 
-  --gear-bg: #25eb35;             
-  --logout-hover: #ff0000;        /* bright red */
+  --gear-bg: #25eb35;
+  --logout-hover: #ff0000;
+  /* bright red */
 }
 
 body.theme-light .recent-jobs-card {
@@ -34,13 +39,16 @@ body.theme-light .recent-jobs-card {
 
 /* ===================== DARK MODE ===================== */
 body.theme-dark {
-  --bg-main: #020617;
-  --bg-card: #0F172A;
-  --bg-card-highlight: #111827;
+  --bg-main: #0B1120;
+  /* softer dark navy */
+  --bg-card: #1E293B;
+  /* elevated slate card */
+  --bg-card-highlight: #334155;
 
-  --sidebar-bg: #0F172A;
+  --sidebar-bg: #1E293B;
   --sidebar-text: #E5E7EB;
-  --sidebar-hover-bg: #2563EB;     /* soft blue */
+  --sidebar-hover-bg: #2563EB;
+  /* soft blue */
   --sidebar-hover-text: #FFFFFF;
 
   --text-primary: #E5E7EB;
@@ -56,10 +64,12 @@ body.theme-dark {
 }
 
 .btn-applied {
-  background-color: #FBBF24 !important;
-  color: #020617 !important;
-  border: none;
-  cursor: default;
+  background: linear-gradient(135deg, #10B981, #059669) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25) !important;
+  cursor: default !important;
+  opacity: 1 !important;
 }
 
 /* ===================== BASE ===================== */
@@ -136,14 +146,16 @@ body {
 
 /* Hover effect */
 .table-hover tbody tr:hover {
-  background-color: rgba(59, 130, 246, 0.15); /* blue hover */
+  background-color: rgba(59, 130, 246, 0.15);
+  /* blue hover */
 }
 
 
 /* ===================== ICON BUTTONS (FIXED) ===================== */
 
 .icon-btn {
-  background-color: rgba(255, 255, 255, 0.25); /* clearly visible */
+  background-color: rgba(255, 255, 255, 0.25);
+  /* clearly visible */
   border: none;
   padding: 10px;
   border-radius: 50%;
@@ -156,7 +168,8 @@ body {
 
 /* Force icon color */
 .icon-btn svg {
-  stroke: #ffffff !important; /* FORCE white */
+  stroke: #ffffff !important;
+  /* FORCE white */
 }
 
 /* Gear hover */

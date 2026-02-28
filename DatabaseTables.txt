@@ -1,0 +1,68 @@
+Table for user 
+SELECT TOP (1000) [UserId]
+      ,[FullName]
+      ,[Email]
+      ,[PasswordHash]
+      ,[Role]
+      ,[CreatedAt]
+      ,[IsActive]
+  FROM [SmartJobDB].[dbo].[Users]
+
+Table for userprofile 
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [ProfileId]
+      ,[UserId]
+      ,[Skills]
+      ,[ExperienceYears]
+      ,[Education]
+      ,[PreferredLocation]
+      ,[ResumePath]
+  FROM [SmartJobDB].[dbo].[UserProfiles]
+
+Table for useractivitylog
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [LogId]
+      ,[UserId]
+      ,[Action]
+      ,[ActionDate]
+  FROM [SmartJobDB].[dbo].[UserActivityLogs]
+
+table for job
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [JobId]
+      ,[CompanyId]
+      ,[Title]
+      ,[Description]
+      ,[RequiredSkills]
+      ,[JobType]
+      ,[SalaryRange]
+      ,[PostedDate]
+      ,[IsActive]
+  FROM [SmartJobDB].[dbo].[Jobs]
+
+table for company
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [CompanyId]
+      ,[CompanyName]
+      ,[Industry]
+      ,[Location]
+      ,[CreatedAt]
+  FROM [SmartJobDB].[dbo].[Companies]
+
+Table for application
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [ApplicationId]
+      ,[JobId]
+      ,[UserId]
+      ,[ApplicationStatus]
+      ,[AppliedDate]
+  FROM [SmartJobDB].[dbo].[Applications]
+
+Table for AIJobRecommendations
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [RecommendationId]
+      ,[UserId]
+      ,[JobId]
+      ,[MatchScore]
+      ,[GeneratedAt]
+  FROM [SmartJobDB].[dbo].[AI_JobRecommendations]

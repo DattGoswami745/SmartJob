@@ -191,23 +191,25 @@ onMounted(async () => {
     stats.value = data.stats
     recentApplications.value = data.recentApplications
 
-    const labels = data.monthlyChart.map(x => x.month)
+    // Handle missing or empty dailyChart array gracefully
+    const chartData = data.dailyChart || []
+    const labels = chartData.map(x => x.day)
 
-    // Applications Growth (REAL DATA)
+    // Applications Growth (REAL DATA - Daily)
     applicationsChart.value = {
       labels,
       datasets: [{
-        data: data.monthlyChart.map(x => x.totalApplications),
+        data: chartData.map(x => x.totalApplications),
         borderColor: "#ffc107",
         tension: 0.4
       }]
     }
 
-    // Placements Growth (REAL DATA)
+    // Placements Growth (REAL DATA - Daily)
     placedChart.value = {
       labels,
       datasets: [{
-        data: data.monthlyChart.map(x => x.totalPlaced),
+        data: chartData.map(x => x.totalPlaced),
         borderColor: "#198754",
         tension: 0.4
       }]
@@ -241,6 +243,8 @@ onMounted(async () => {
 <style scoped>
 .hover-card {
   transition: all 0.3s ease;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .hover-card:hover {
@@ -250,6 +254,8 @@ onMounted(async () => {
 
 .chart-card {
   height: 280px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .chart-wrapper {
@@ -259,5 +265,23 @@ onMounted(async () => {
 
 .card {
   border-radius: 12px;
+}
+
+h2, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+/* Ensure table adheres to theme */
+.table {
+  color: var(--text-primary);
+}
+
+.table th {
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  border-bottom: 1px solid var(--border);
 }
 </style>
