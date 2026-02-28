@@ -1,0 +1,2 @@
+C:\Users\Datt Goswami\OneDrive\Desktop\Degree\Sem-8\SmartJobSystem\smartjobsystem.client\obj\Debug\smartjobsystem.client.esproj.CoreCompileInputs.cache
+C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\smartjobsystem.client\obj\Debug\smartjobsystem.client.esproj.CoreCompileInputs.cache

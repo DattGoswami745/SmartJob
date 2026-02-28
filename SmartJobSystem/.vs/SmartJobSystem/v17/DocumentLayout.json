@@ -1,0 +1,90 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\models\\job.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\models\\job.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\data\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\data\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\controllers\\centralcompaniescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\controllers\\centralcompaniescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\controllers\\centraljobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\controllers\\centraljobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DbHelper.cs",
+              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Data\\DbHelper.cs",
+              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Data\\DbHelper.cs",
+              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Data\\DbHelper.cs",
+              "RelativeToolTip": "SmartJobSystem.Server\\Data\\DbHelper.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAAAgwEEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-22T06:43:29.51Z",
+              "IsPinned": true
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Job.cs",
+              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Models\\Job.cs",
+              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Models\\Job.cs",
+              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Models\\Job.cs",
+              "RelativeToolTip": "SmartJobSystem.Server\\Models\\Job.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-22T13:36:24.897Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CentralCompaniesController.cs",
+              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Controllers\\CentralCompaniesController.cs",
+              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Controllers\\CentralCompaniesController.cs",
+              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Controllers\\CentralCompaniesController.cs",
+              "RelativeToolTip": "SmartJobSystem.Server\\Controllers\\CentralCompaniesController.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAwBQAAAA3AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-22T12:43:37.77Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CentralJobsController.cs",
+              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Controllers\\CentralJobsController.cs",
+              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Controllers\\CentralJobsController.cs",
+              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Controllers\\CentralJobsController.cs",
+              "RelativeToolTip": "SmartJobSystem.Server\\Controllers\\CentralJobsController.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAQwBcAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-02-22T12:27:53.377Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

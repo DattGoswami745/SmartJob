@@ -1,0 +1,43 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Backend (Launch)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-backend",
+            "program": "${workspaceFolder}/SmartJobSystem/SmartJobSystem.Server/bin/Debug/net8.0/SmartJobSystem.Server.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/SmartJobSystem/SmartJobSystem.Server",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "Vue Frontend (Vite)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/smartjob-ui/src",
+            "sourceMaps": true,
+            "preLaunchTask": "run-frontend"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Launch Both (Backend & Frontend)",
+            "configurations": [
+                ".NET Backend (Launch)",
+                "Vue Frontend (Vite)"
+            ]
+        }
+    ]
+}

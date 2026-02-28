@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "run-backend",
+            "type": "process",
+            "command": "dotnet",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/SmartJobSystem/SmartJobSystem.Server/SmartJobSystem.Server.csproj"
+            ],
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "group": "backend"
+            }
+        },
+        {
+            "label": "run-frontend",
+            "type": "shell",
+            "command": "npm",
+            "args": [
+                "run",
+                "dev"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/smartjob-ui"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "group": "frontend"
+            }
+        },
+        {
+            "label": "build-backend",
+            "type": "process",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/SmartJobSystem/SmartJobSystem.Server/SmartJobSystem.Server.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
