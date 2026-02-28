@@ -68,6 +68,35 @@ export async function logoutUser() {
   localStorage.clear()
 }
 
+export async function verifyEmail(email, otp) {
+  const res = await fetch(`${BASE}/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp })
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json()
+    throw new Error(errorData.message || "Invalid OTP")
+  }
+  return await res.json()
+}
+
+export async function resendOTP(email) {
+  const res = await fetch(`${BASE}/auth/resend-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json()
+    throw new Error(errorData.message || "Failed to resend OTP")
+  }
+  return await res.json()
+}
+
+
 /* ===================== PROFILE ===================== */
 
 export async function getProfile() {

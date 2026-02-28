@@ -215,20 +215,21 @@ onMounted(async () => {
       }]
     }
 
-    // Optional: For now using totals for users & jobs (you can extend backend later)
+    // Users Growth (REAL DATA - Daily)
     usersChart.value = {
       labels,
       datasets: [{
-        data: labels.map(() => stats.value.totalUsers),
+        data: chartData.map(x => x.totalUsers),
         borderColor: "#0d6efd",
         tension: 0.4
       }]
     }
 
+    // Jobs Growth (REAL DATA - Daily)
     jobsChart.value = {
       labels,
       datasets: [{
-        data: labels.map(() => stats.value.totalJobs),
+        data: chartData.map(x => x.totalJobs),
         borderColor: "#17a2b8",
         tension: 0.4
       }]

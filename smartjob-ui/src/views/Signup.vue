@@ -102,13 +102,56 @@
         <router-link to="/login" class="text-primary text-decoration-none fw-bold ms-1">Sign In</router-link>
       </p>
     </form>
+
+    <!-- OTP MODAL/POPUP -->
+    <div v-if="showOtpModal" class="otp-modal-overlay">
+      <div class="otp-modal-content">
+        <div class="text-center mb-4">
+          <div class="icon-box ai-icon mx-auto mb-3">
+            <Mail class="text-primary" size="32" />
+          </div>
+          <h4 class="fw-bold gradient-text">Verify Email</h4>
+          <p class="text-muted small px-3">We sent a verification code to <strong>{{ email }}</strong></p>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label text-muted small fw-semibold">Enter 6-Digit OTP</label>
+          <input
+            type="text"
+            class="form-control premium-input border text-center fw-bold fs-4 shadow-none"
+            v-model="otpValue"
+            maxlength="6"
+            placeholder="------"
+            style="letter-spacing: 0.5rem;"
+          />
+        </div>
+
+        <!-- OTP ERROR -->
+        <div v-if="otpError" class="alert alert-danger d-flex align-items-center gap-2 py-2 mt-2 mb-3" role="alert">
+          <AlertCircle size="18" />
+          <small class="m-0">{{ otpError }}</small>
+        </div>
+
+        <button type="button" class="btn btn-primary-gradient w-100 py-3 mb-3" :disabled="isVerifying" @click="handleVerifyOtp">
+          <span v-if="isVerifying" class="spinner-border spinner-border-sm me-2"></span>
+          {{ isVerifying ? 'Verifying...' : 'Verify & Sign In' }}
+        </button>
+
+        <p class="text-center text-muted small m-0 mb-2">
+          Didn't receive the code? 
+          <a href="#" class="text-primary text-decoration-none fw-bold ms-1" @click.prevent="handleResendOtp">Resend OTP</a>
+        </p>
+        
+        <p v-if="resendMessage" class="text-center text-success small fw-bold m-0 mt-2">{{ resendMessage }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
-import { signupUser } from "../services/api"
+import { signupUser, verifyEmail, resendOTP } from "../services/api"
 import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-vue-next"
 
 onMounted(() => {
@@ -117,7 +160,6 @@ onMounted(() => {
 })
 
 const isLoading = ref(false)
-
 const router = useRouter()
 
 const name = ref("")
@@ -135,6 +177,12 @@ const errors = ref({
   confirmPassword: "",
   general: ""
 })
+
+const otpValue = ref("")
+const showOtpModal = ref(false)
+const isVerifying = ref(false)
+const otpError = ref("")
+const resendMessage = ref("")
 
 async function handleSignup() {
   // Reset errors
@@ -168,12 +216,46 @@ async function handleSignup() {
       password: password.value
     })
 
-    router.push("/login")
+    // Show OTP Verify Modal
+    showOtpModal.value = true
   } catch (err) {
     errors.value.general =
-      err?.response?.data?.message || "Signup failed. Email might be in use."
+      err?.response?.data?.message || err.message || "Signup failed. Email might be in use."
   } finally {
     isLoading.value = false
+  }
+}
+
+async function handleVerifyOtp() {
+  otpError.value = ""
+  if (!otpValue.value || otpValue.value.length < 6) {
+    otpError.value = "Please enter a valid 6-digit OTP"
+    return
+  }
+
+  try {
+    isVerifying.value = true
+    await verifyEmail(email.value, otpValue.value)
+    
+    // Success - Go to Login
+    showOtpModal.value = false
+    router.push("/login")
+  } catch (err) {
+    otpError.value = err.message || "Invalid OTP"
+  } finally {
+    isVerifying.value = false
+  }
+}
+
+async function handleResendOtp() {
+  otpError.value = ""
+  resendMessage.value = ""
+  try {
+    await resendOTP(email.value)
+    resendMessage.value = "New OTP sent (111111)!"
+    setTimeout(() => { resendMessage.value = "" }, 3000)
+  } catch(err) {
+    otpError.value = err.message || "Failed to resend OTP"
   }
 }
 </script>
@@ -254,5 +336,33 @@ async function handleSignup() {
 .btn-primary-gradient:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* OTP Modal Styles */
+.otp-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.otp-modal-content {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 24px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  animation: modalScale 0.3s ease-out;
+}
+
+@keyframes modalScale {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 </style>

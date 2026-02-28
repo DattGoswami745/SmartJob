@@ -104,34 +104,86 @@ namespace SmartJobSystem.Server.Controllers
             return list;
         }
 
-        // ✅ DAILY CHART DATA
+        // ✅ ENHANCED DAILY CHART DATA
         private List<object> GetDailyChartData(SqlConnection con)
         {
-            var list = new List<object>();
+            var dict = new Dictionary<string, dynamic>();
 
-            var cmd = new SqlCommand(@"
-                SELECT TOP 30
-                    FORMAT(A.AppliedDate, 'yyyy-MM-dd') AS Day,
-                    COUNT(*) AS TotalApplications,
-                    SUM(CASE WHEN A.ApplicationStatus = 'Placed' THEN 1 ELSE 0 END) AS TotalPlaced
-                FROM Applications A
-                GROUP BY FORMAT(A.AppliedDate, 'yyyy-MM-dd')
-                ORDER BY Day
+            // 1. Get Applications & Placements
+            var cmdApps = new SqlCommand(@"
+                SELECT 
+                    FORMAT(AppliedDate, 'yyyy-MM-dd') AS Day,
+                    COUNT(*) AS Apps,
+                    SUM(CASE WHEN ApplicationStatus = 'Placed' THEN 1 ELSE 0 END) AS Placed
+                FROM Applications
+                WHERE AppliedDate >= DATEADD(day, -30, GETDATE())
+                GROUP BY FORMAT(AppliedDate, 'yyyy-MM-dd')
             ", con);
-
-            using var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            
+            using (var r = cmdApps.ExecuteReader())
             {
-                list.Add(new
+                while (r.Read())
                 {
-                    day = reader["Day"],
-                    totalApplications = reader["TotalApplications"],
-                    totalPlaced = reader["TotalPlaced"]
-                });
+                    var day = r["Day"].ToString();
+                    dict[day] = new { day, totalApplications = r["Apps"], totalPlaced = r["Placed"], totalUsers = 0, totalJobs = 0 };
+                }
             }
 
-            return list;
+            // 2. Get User Registrations
+            var cmdUsers = new SqlCommand(@"
+                SELECT 
+                    FORMAT(CreatedAt, 'yyyy-MM-dd') AS Day,
+                    COUNT(*) AS Count
+                FROM Users
+                WHERE CreatedAt >= DATEADD(day, -30, GETDATE())
+                GROUP BY FORMAT(CreatedAt, 'yyyy-MM-dd')
+            ", con);
+
+            using (var r = cmdUsers.ExecuteReader())
+            {
+                while (r.Read())
+                {
+                    var day = r["Day"].ToString();
+                    if (dict.ContainsKey(day))
+                    {
+                        var existing = dict[day];
+                        dict[day] = new { day, totalApplications = existing.totalApplications, totalPlaced = existing.totalPlaced, totalUsers = r["Count"], totalJobs = existing.totalJobs };
+                    }
+                    else
+                    {
+                        dict[day] = new { day, totalApplications = 0, totalPlaced = 0, totalUsers = r["Count"], totalJobs = 0 };
+                    }
+                }
+            }
+
+            // 3. Get Job Postings
+            var cmdJobs = new SqlCommand(@"
+                SELECT 
+                    FORMAT(PostedDate, 'yyyy-MM-dd') AS Day,
+                    COUNT(*) AS Count
+                FROM Jobs
+                WHERE PostedDate >= DATEADD(day, -30, GETDATE())
+                GROUP BY FORMAT(PostedDate, 'yyyy-MM-dd')
+            ", con);
+
+            using (var r = cmdJobs.ExecuteReader())
+            {
+                while (r.Read())
+                {
+                    var day = r["Day"].ToString();
+                    if (dict.ContainsKey(day))
+                    {
+                        var existing = dict[day];
+                        dict[day] = new { day, totalApplications = existing.totalApplications, totalPlaced = existing.totalPlaced, totalUsers = existing.totalUsers, totalJobs = r["Count"] };
+                    }
+                    else
+                    {
+                        dict[day] = new { day, totalApplications = 0, totalPlaced = 0, totalUsers = 0, totalJobs = r["Count"] };
+                    }
+                }
+            }
+
+            return dict.Values.OrderBy(x => x.day).Cast<object>().ToList();
         }
     }
 }

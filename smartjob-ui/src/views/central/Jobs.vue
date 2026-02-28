@@ -98,6 +98,11 @@
           <span class="error-msg" v-if="errors.salaryRange">{{ errors.salaryRange }}</span>
         </div>
 
+        <div class="form-group">
+          <label>Last Date to Apply</label>
+          <input type="date" v-model="newJob.lastDate" />
+        </div>
+
       </div>
 
       <div class="form-footer">
@@ -173,6 +178,11 @@
           <span class="error-msg" v-if="updateErrors.salaryRange">{{ updateErrors.salaryRange }}</span>
         </div>
 
+        <div class="form-group">
+          <label>Last Date to Apply</label>
+          <input type="date" v-model="editingJob.lastDate" />
+        </div>
+
       </div>
 
       <div class="form-footer">
@@ -201,6 +211,7 @@
               <th>Company</th>
               <th>Type</th>
               <th>Salary</th>
+              <th>Last Date</th>
               <th>Skills</th>
               <th>Actions</th>
             </tr>
@@ -214,6 +225,7 @@
               </td>
               <td>{{ job.jobType }}</td>
               <td>{{ job.salaryRange }}</td>
+              <td>{{ job.lastDate ? job.lastDate.split('T')[0] : 'N/A' }}</td>
               <td>{{ job.requiredSkills }}</td>
               <td>
                 <button class="action-btn edit-btn" @click="editJob(job)">
@@ -264,7 +276,8 @@ export default {
       description: "",
       requiredSkills: "",
       jobType: "",
-      salaryRange: ""
+      salaryRange: "",
+      lastDate: ""
     })
 
     const showUpdateJob = ref(false)
@@ -339,6 +352,7 @@ export default {
       editingJob.value.requiredSkills = editingJob.value.requiredSkills || ""
       editingJob.value.jobType = editingJob.value.jobType || ""
       editingJob.value.salaryRange = editingJob.value.salaryRange || ""
+      editingJob.value.lastDate = editingJob.value.lastDate ? editingJob.value.lastDate.split('T')[0] : ""
       
       let val = editingJob.value.salaryRange
       if (val && /LPA$/i.test(val)) {
@@ -392,7 +406,11 @@ export default {
       try {
         loading.value = true
 
-        await addJob(newJob.value)
+        // Ensure empty date is null, not ""
+        const payload = { ...newJob.value }
+        if (!payload.lastDate) payload.lastDate = null
+
+        await addJob(payload)
 
         alert("Job Added Successfully")
 
@@ -402,7 +420,8 @@ export default {
           description: "",
           requiredSkills: "",
           jobType: "",
-          salaryRange: ""
+          salaryRange: "",
+          lastDate: ""
         }
         errors.value = {}
 
@@ -423,7 +442,12 @@ export default {
 
       try {
         loading.value = true
-        await updateJob(editingJob.value.jobId, editingJob.value)
+
+        // Ensure empty date is null, not ""
+        const payload = { ...editingJob.value }
+        if (!payload.lastDate) payload.lastDate = null
+
+        await updateJob(editingJob.value.jobId, payload)
 
         alert("Job Updated Successfully")
         showUpdateJob.value = false

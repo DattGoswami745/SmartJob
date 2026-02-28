@@ -109,6 +109,7 @@
               <th scope="col">Requirements</th>
               <th scope="col">Type</th>
               <th scope="col">Salary</th>
+              <th scope="col">Last Date</th>
               <th scope="col">Posted</th>
               <th scope="col" class="text-end pe-4">Action</th>
             </tr>
@@ -138,6 +139,11 @@
               </td>
               <td><span class="text-main fw-medium">{{ job.jobType }}</span></td>
               <td><span class="text-success fw-semibold">{{ job.salaryRange }}</span></td>
+              <td>
+                <span :class="{'text-danger': isClosingSoon(job.lastDate), 'text-muted': !isClosingSoon(job.lastDate)}" class="small fw-semibold">
+                  {{ formatDate(job.lastDate) || 'No Deadline' }}
+                </span>
+              </td>
               <td><span class="text-muted small">{{ job.postedDate.split("T")[0] }}</span></td>
               <td class="text-end pe-4">
                 <button
@@ -163,13 +169,53 @@
         </table>
       </div>
     </div>
+
+    <!-- PROFILE COMPLETION POPUP -->
+    <div v-if="showProfileReminder" class="profile-reminder-overlay">
+      <div class="profile-reminder-content">
+        <div class="text-center mb-4">
+          <div class="icon-box-large pulse-animation mx-auto mb-3">
+            <UserIcon class="text-primary" size="48" />
+          </div>
+          <h3 class="fw-bold gradient-text">Complete Your Profile!</h3>
+          <p class="text-muted">You're almost there! Complete your profile to get better job matches and stand out to recruiters.</p>
+        </div>
+
+        <div class="reminder-features mb-4">
+          <div class="feature-item">
+            <div class="feature-icon"><Zap size="18" /></div>
+            <span>Boost your skill match score</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><Target size="18" /></div>
+            <span>Get personalized recommendations</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"><ShieldCheck size="18" /></div>
+            <span>Build trust with companies</span>
+          </div>
+        </div>
+
+        <div class="d-grid gap-3">
+          <button @click="goToProfile" class="btn btn-primary-gradient py-3 fw-bold">
+            Complete My Profile <ArrowRight size="20" class="ms-2" />
+          </button>
+          <button @click="dismissReminder" class="btn btn-link text-muted text-decoration-none small">
+            Remind me later
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { getJobs, getDashboardData, applyJob } from "../services/api"
-import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin } from "lucide-vue-next"
+import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck } from "lucide-vue-next"
+import { useRouter } from "vue-router"
+
+const router = useRouter()
 
 /* STATE */
 const jobs = ref([])
@@ -177,8 +223,11 @@ const showFilters = ref(false)
 const stats = ref({
   totalJobs: 0,
   appliedJobs: 0,
-  skillMatch: 0
+  skillMatch: 0,
+  isProfileComplete: true
 })
+
+const showProfileReminder = ref(false)
 
 /* FILTERS */
 const filters = ref({
@@ -215,12 +264,29 @@ function clearFilters() {
 /* LOAD DATA USING SESSION */
 onMounted(async () => {
   try {
-    stats.value = await getDashboardData()
+    const data = await getDashboardData()
+    stats.value = data
     jobs.value = await getJobs()
+
+    // Show reminder if profile is incomplete
+    if (!data.isProfileComplete) {
+      setTimeout(() => {
+        showProfileReminder.value = true
+      }, 1000)
+    }
   } catch (err) {
     console.error("Dashboard load failed", err)
   }
 })
+
+function goToProfile() {
+  showProfileReminder.value = false
+  router.push("/app/profile")
+}
+
+function dismissReminder() {
+  showProfileReminder.value = false
+}
 
 /* APPLY JOB */
 async function apply(job) {
@@ -229,6 +295,20 @@ async function apply(job) {
     job.applied = true
     stats.value.appliedJobs++
   }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return null
+  return dateStr.split("T")[0]
+}
+
+function isClosingSoon(dateStr) {
+  if (!dateStr) return false
+  const deadline = new Date(dateStr)
+  const now = new Date()
+  const diffTime = deadline - now
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays <= 3 && diffDays >= 0
 }
 </script>
 
@@ -434,5 +514,83 @@ async function apply(job) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
   color: white;
+}
+
+/* Profile Reminder Overlay */
+.profile-reminder-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.profile-reminder-content {
+  background: white;
+  max-width: 480px;
+  width: 100%;
+  border-radius: 30px;
+  padding: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalSlideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.icon-box-large {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  border-radius: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.reminder-features {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.feature-item:last-child { margin-bottom: 0; }
+
+.feature-icon {
+  width: 28px;
+  height: 28px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 </style>

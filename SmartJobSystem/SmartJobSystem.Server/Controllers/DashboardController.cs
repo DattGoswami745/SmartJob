@@ -22,26 +22,43 @@ public class DashboardController : ControllerBase
         using var con = _db.GetConnection();
         con.Open();
 
-        // 1️⃣ Get user skills FROM UserProfiles (Correct Table)
+        // 1️⃣ Get user profile details
         var profileCmd = new SqlCommand(
-            "SELECT Skills FROM UserProfiles WHERE UserId=@uid",
+            "SELECT Skills, Education, PreferredLocation FROM UserProfiles WHERE UserId=@uid",
             con);
 
         profileCmd.Parameters.AddWithValue("@uid", userId.Value);
+        
+        using var profileReader = profileCmd.ExecuteReader();
+        string skills = "";
+        string education = "";
+        string location = "";
+        bool profileExists = profileReader.Read();
 
-        var skillsObj = profileCmd.ExecuteScalar();
+        if (profileExists)
+        {
+            skills = profileReader["Skills"]?.ToString() ?? "";
+            education = profileReader["Education"]?.ToString() ?? "";
+            location = profileReader["PreferredLocation"]?.ToString() ?? "";
+        }
+        profileReader.Close();
 
-        if (skillsObj == null || string.IsNullOrWhiteSpace(skillsObj.ToString()))
+        bool isProfileComplete = !string.IsNullOrWhiteSpace(skills) && 
+                                 !string.IsNullOrWhiteSpace(education) && 
+                                 !string.IsNullOrWhiteSpace(location);
+
+        if (string.IsNullOrWhiteSpace(skills))
         {
             return Ok(new
             {
                 totalJobs = GetTotalJobs(con),
                 appliedJobs = GetAppliedJobs(con, userId.Value),
-                skillMatch = 0
+                skillMatch = 0,
+                isProfileComplete = isProfileComplete
             });
         }
 
-        var userSkills = skillsObj.ToString()
+        var userSkills = skills
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim().ToLower())
             .ToList();
@@ -50,8 +67,7 @@ public class DashboardController : ControllerBase
         int totalJobs = GetTotalJobs(con);
         int appliedJobs = GetAppliedJobs(con, userId.Value);
 
-        // 3️⃣ Better Skill Matching Logic (Improved Version)
-
+        // 3️⃣ Skill Matching Logic
         var jobCmd = new SqlCommand(
             "SELECT RequiredSkills FROM Jobs WHERE IsActive=1",
             con);
@@ -88,7 +104,8 @@ public class DashboardController : ControllerBase
         {
             totalJobs = totalJobs,
             appliedJobs = appliedJobs,
-            skillMatch = Math.Round(finalMatch, 2)
+            skillMatch = Math.Round(finalMatch, 2),
+            isProfileComplete = isProfileComplete
         });
     }
 

@@ -63,6 +63,7 @@ public class ApplicationsController : ControllerBase
                 a.ApplicationId,
                 a.ApplicationStatus,
                 j.Title,
+                j.LastDate,
                 c.CompanyName
             FROM Applications a
             JOIN Jobs j ON a.JobId = j.JobId
@@ -80,6 +81,7 @@ public class ApplicationsController : ControllerBase
             {
                 applicationId = reader["ApplicationId"],
                 title = reader["Title"].ToString(),
+                lastDate = reader["LastDate"] == DBNull.Value ? null : reader["LastDate"],
                 company = reader["CompanyName"].ToString(),
                 status = reader["ApplicationStatus"].ToString()
             });

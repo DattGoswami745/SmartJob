@@ -57,6 +57,10 @@
                 <h5 class="fw-bold m-0 text-main text-truncate">{{ job.title }}</h5>
                 <span class="text-muted small text-truncate d-block">{{ job.companyName || 'SmartJob System' }}</span>
               </div>
+              <div v-if="job.lastDate" class="deadline-badge ms-2 flex-shrink-0" :class="{'urgent': isClosingSoon(job.lastDate)}">
+                <Calendar size="12" class="me-1" />
+                <span>{{ formatDate(job.lastDate) }}</span>
+              </div>
             </div>
 
             <div class="d-flex align-items-center gap-2 text-muted small">
@@ -64,8 +68,8 @@
               <span class="fw-medium text-main">{{ job.location || 'Not Specified' }}</span>
             </div>
 
-            <div class="d-flex align-items-center gap-2 text-muted small">
-              <span class="badge bg-secondary-subtle text-secondary fw-medium rounded-pill me-1">{{ job.jobType || 'Full-time' }}</span>
+            <div class="d-flex align-items-center gap-3 text-muted small">
+              <span class="badge bg-secondary-subtle text-secondary fw-medium rounded-pill">{{ job.jobType || 'Full-time' }}</span>
               <span class="text-success fw-semibold">{{ job.salaryRange || 'Competitive' }}</span>
             </div>
 
@@ -157,6 +161,18 @@
                    <p class="fw-medium text-success m-0">{{ selectedJob.salaryRange || 'Competitive' }}</p>
                  </div>
                </div>
+               <!-- LAST DATE -->
+               <div v-if="selectedJob.lastDate" class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Last Date to Apply</p>
+                   <div class="d-flex align-items-center gap-1">
+                     <Calendar size="16" class="text-muted" />
+                     <p :class="{'text-danger': isClosingSoon(selectedJob.lastDate)}" class="fw-bold m-0">
+                       {{ formatDate(selectedJob.lastDate) }}
+                     </p>
+                   </div>
+                 </div>
+               </div>
             </div>
 
             <div class="mb-4">
@@ -194,7 +210,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { getJobs, applyJob } from "@/services/api"
-import { Briefcase, Search, X, MapPin, Filter } from "lucide-vue-next"
+import { Briefcase, Search, X, MapPin, Filter, Calendar } from "lucide-vue-next"
 
 const jobs = ref([])
 const selectedJob = ref(null)
@@ -245,6 +261,20 @@ async function apply(job) {
        selectedJob.value.applied = true
     }
   }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return null
+  return dateStr.split("T")[0]
+}
+
+function isClosingSoon(dateStr) {
+  if (!dateStr) return false
+  const deadline = new Date(dateStr)
+  const now = new Date()
+  const diffTime = deadline - now
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays <= 3 && diffDays >= 0
 }
 </script>
 
@@ -343,6 +373,33 @@ async function apply(job) {
 .filter-bar .form-control::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+}
+
+/* Deadline Badge */
+.deadline-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--recent-bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.deadline-badge.urgent {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 /* Job Avatar Box */

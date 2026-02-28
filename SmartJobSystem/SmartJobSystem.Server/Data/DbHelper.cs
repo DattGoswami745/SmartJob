@@ -38,6 +38,7 @@ namespace SmartJobSystem.Server.Data
             j.JobType,
             j.SalaryRange,
             j.PostedDate,
+            j.LastDate,
             j.IsActive,
             c.CompanyName
         FROM Jobs j
@@ -61,8 +62,9 @@ namespace SmartJobSystem.Server.Data
                     JobType = reader.IsDBNull(5) ? "" : reader.GetString(5),
                     SalaryRange = reader.IsDBNull(6) ? "" : reader.GetString(6),
                     PostedDate = reader.GetDateTime(7),
-                    IsActive = reader.GetBoolean(8),
-                    CompanyName = reader.IsDBNull(9) ? null : reader.GetString(9)
+                    LastDate = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
+                    IsActive = reader.GetBoolean(9),
+                    CompanyName = reader.IsDBNull(10) ? null : reader.GetString(10)
                 });
             }
 
@@ -431,9 +433,9 @@ namespace SmartJobSystem.Server.Data
             using var con = GetConnection();
             using var cmd = new SqlCommand(@"
                 INSERT INTO Jobs 
-                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, IsActive)
+                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, LastDate, IsActive)
                 VALUES
-                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @IsActive);
+                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @LastDate, @IsActive);
                 SELECT SCOPE_IDENTITY();
             ", con);
 
@@ -444,6 +446,7 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@JobType", SqlDbType.NVarChar, 100).Value = job.JobType ?? "";
             cmd.Parameters.Add("@SalaryRange", SqlDbType.NVarChar, 100).Value = job.SalaryRange ?? "";
             cmd.Parameters.Add("@PostedDate", SqlDbType.DateTime2).Value = DateTime.UtcNow;
+            cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
             cmd.Parameters.Add("@IsActive", SqlDbType.Bit).Value = true;
 
             await con.OpenAsync();
@@ -464,7 +467,8 @@ namespace SmartJobSystem.Server.Data
                     Description = @Description,
                     RequiredSkills = @RequiredSkills,
                     JobType = @JobType,
-                    SalaryRange = @SalaryRange
+                    SalaryRange = @SalaryRange,
+                    LastDate = @LastDate
                 WHERE JobId = @JobId AND IsActive = 1
             ", con);
 
@@ -475,6 +479,7 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@RequiredSkills", SqlDbType.NVarChar).Value = job.RequiredSkills ?? "";
             cmd.Parameters.Add("@JobType", SqlDbType.NVarChar, 100).Value = job.JobType ?? "";
             cmd.Parameters.Add("@SalaryRange", SqlDbType.NVarChar, 100).Value = job.SalaryRange ?? "";
+            cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
 
             await con.OpenAsync();
             int rowsAffected = await cmd.ExecuteNonQueryAsync();

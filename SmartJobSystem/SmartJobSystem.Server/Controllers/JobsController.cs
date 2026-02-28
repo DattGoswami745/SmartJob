@@ -37,6 +37,7 @@ namespace SmartJobSystem.Server.Controllers
                     j.JobType,
                     j.SalaryRange,
                     j.PostedDate,
+                    j.LastDate,
 
                     c.CompanyName,
                     c.Industry,
@@ -69,6 +70,7 @@ namespace SmartJobSystem.Server.Controllers
                     jobType = reader["JobType"].ToString(),
                     salaryRange = reader["SalaryRange"].ToString(),
                     postedDate = reader["PostedDate"],
+                    lastDate = reader["LastDate"] == DBNull.Value ? null : reader["LastDate"],
 
                     companyName = reader["CompanyName"].ToString(),
                     industry = reader["Industry"].ToString(),

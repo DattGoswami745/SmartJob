@@ -38,6 +38,13 @@
               </div>
             </div>
 
+            <div v-if="app.lastDate" class="d-flex align-items-center gap-2 text-muted small mt-1">
+              <Calendar size="14" class="text-muted" />
+              <span :class="{'text-danger': isClosingSoon(app.lastDate)}" class="fw-medium">
+                Deadline: {{ formatDate(app.lastDate) }}
+              </span>
+            </div>
+
             <div class="w-100 border-top border-light my-1"></div>
 
             <div class="d-flex justify-content-between align-items-center w-100 mt-auto pt-2">
@@ -64,7 +71,7 @@
 <script setup>
 import { ref, onMounted } from "vue"
 import { getMyApplications } from "../services/api"
-import { Briefcase, FileX, Clock } from "lucide-vue-next"
+import { Briefcase, FileX, Clock, Calendar } from "lucide-vue-next"
 
 const applications = ref([])
 
@@ -88,6 +95,20 @@ function statusGlowClass(status) {
   if (status === "Shortlisted") return "glow-success"
   if (status === "Rejected") return "glow-danger"
   return "glow-secondary"
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return null
+  return dateStr.split("T")[0]
+}
+
+function isClosingSoon(dateStr) {
+  if (!dateStr) return false
+  const deadline = new Date(dateStr)
+  const now = new Date()
+  const diffTime = deadline - now
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays <= 3 && diffDays >= 0
 }
 </script>
 

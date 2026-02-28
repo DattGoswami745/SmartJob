@@ -73,9 +73,9 @@ namespace SmartJobAPI.Controllers
 
             // 🧑 Insert into Users + GET UserId
             var insertUser = new SqlCommand(@"
-                INSERT INTO Users (FullName, Email, PasswordHash, Role, IsActive)
+                INSERT INTO Users (FullName, Email, PasswordHash, Role, IsActive, IsEmailVerified, EmailOTP, EmailOTPExpiry)
                 OUTPUT INSERTED.UserId
-                VALUES (@Name, @Email, @Password, 'User', 1)
+                VALUES (@Name, @Email, @Password, 'User', 1, 0, '111111', DATEADD(MINUTE, 10, GETDATE()))
             ", con);
 
             insertUser.Parameters.AddWithValue("@Name", dto.FullName);
@@ -124,6 +124,69 @@ namespace SmartJobAPI.Controllers
                 role = HttpContext.Session.GetString("Role")
             });
         }
+
+        // ================= VERIFY EMAIL =================
+        [HttpPost("verify-email")]
+        public IActionResult VerifyEmail([FromBody] VerifyEmailDto dto)
+        {
+            using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
+            con.Open();
+
+            var cmd = new SqlCommand("SELECT UserId, EmailOTP, EmailOTPExpiry FROM Users WHERE Email = @Email AND IsActive = 1", con);
+            cmd.Parameters.AddWithValue("@Email", dto.Email);
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return NotFound(new { message = "User not found" });
+
+            var dbOtp = reader["EmailOTP"]?.ToString();
+            var expiryObj = reader["EmailOTPExpiry"];
+            
+            if (string.IsNullOrEmpty(dbOtp) || dbOtp != dto.Otp)
+                return BadRequest(new { message = "Invalid OTP" });
+
+            if (expiryObj != DBNull.Value && (DateTime)expiryObj < DateTime.UtcNow)
+                return BadRequest(new { message = "OTP has expired" });
+
+            reader.Close(); 
+
+            var updateCmd = new SqlCommand(@"
+                UPDATE Users 
+                SET IsEmailVerified = 1, EmailOTP = NULL, EmailOTPExpiry = NULL 
+                WHERE Email = @Email
+            ", con);
+            updateCmd.Parameters.AddWithValue("@Email", dto.Email);
+            updateCmd.ExecuteNonQuery();
+
+            return Ok(new { message = "Email verified successfully" });
+        }
+
+        // ================= RESEND OTP =================
+        [HttpPost("resend-otp")]
+        public IActionResult ResendOtp([FromBody] ResendOtpDto dto)
+        {
+            using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
+            con.Open();
+
+            var cmd = new SqlCommand("SELECT UserId FROM Users WHERE Email = @Email AND IsActive = 1", con);
+            cmd.Parameters.AddWithValue("@Email", dto.Email);
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return NotFound(new { message = "User not found" });
+            
+            reader.Close();
+
+            var updateCmd = new SqlCommand(@"
+                UPDATE Users 
+                SET EmailOTP = '111111', EmailOTPExpiry = DATEADD(MINUTE, 10, GETDATE()) 
+                WHERE Email = @Email
+            ", con);
+            updateCmd.Parameters.AddWithValue("@Email", dto.Email);
+            updateCmd.ExecuteNonQuery();
+
+            return Ok(new { message = "OTP resent successfully" });
+        }
     }
 
     // ================= DTOs =================
@@ -138,5 +201,16 @@ namespace SmartJobAPI.Controllers
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
+    }
+
+    public class VerifyEmailDto
+    {
+        public string Email { get; set; }
+        public string Otp { get; set; }
+    }
+
+    public class ResendOtpDto
+    {
+        public string Email { get; set; }
     }
 }

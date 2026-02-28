@@ -1,4 +1,5 @@
 Table for user 
+/****** Script for SelectTopNRows command from SSMS  ******/
 SELECT TOP (1000) [UserId]
       ,[FullName]
       ,[Email]
@@ -6,6 +7,9 @@ SELECT TOP (1000) [UserId]
       ,[Role]
       ,[CreatedAt]
       ,[IsActive]
+      ,[IsEmailVerified]
+      ,[EmailOTP]
+      ,[EmailOTPExpiry]
   FROM [SmartJobDB].[dbo].[Users]
 
 Table for userprofile 
@@ -38,6 +42,7 @@ SELECT TOP (1000) [JobId]
       ,[SalaryRange]
       ,[PostedDate]
       ,[IsActive]
+      ,[IsEmailVerified]
   FROM [SmartJobDB].[dbo].[Jobs]
 
 table for company
