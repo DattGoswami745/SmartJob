@@ -1,0 +1,26 @@
+# .gitignore for Smart Job Management System
+
+## .NET Core
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.doccontext
+.vs/
+.vscode/
+
+## Configuration (Keep templates, ignore local secrets)
+# appsettings.Development.json
+# appsettings.json
+# Note: If these contain real API keys, they should be ignored and managed via environment variables.
+
+## Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+
+## OS files
+.DS_Store
+Thumbs.db
