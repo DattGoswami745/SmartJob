@@ -7,7 +7,12 @@ namespace SmartJobAPI.Helpers
     public class GeminiHelper
     {
         private readonly HttpClient _http = new HttpClient();
-        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";//a added extra
+        private readonly string _apiKey;
+
+        public GeminiHelper(IConfiguration config)
+        {
+            _apiKey = config["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
+        }
 
         public async Task<AiResumeResult> Generate(ProfileDto profile)
         {
@@ -45,7 +50,7 @@ Preferred Location: {profile.PreferredLocation}
                 };
 
                 var response = await _http.PostAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={API_KEY}",
+                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={_apiKey}",
                     new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
                 );
 

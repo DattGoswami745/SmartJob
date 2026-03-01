@@ -65,8 +65,6 @@ public class ChatController : ControllerBase
             Content = request.Message
         });
 
-        var ai = new GeminiChatHelper();
-
         // IMPORTANT: Update your GeminiChatHelper to accept conversation
         var aiResponse = await ai.Ask(conversation);
 

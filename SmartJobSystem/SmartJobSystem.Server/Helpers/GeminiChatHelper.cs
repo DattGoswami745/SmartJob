@@ -5,10 +5,14 @@ namespace SmartJobAPI.Helpers
 {
     public class GeminiChatHelper
     {
-        private readonly HttpClient _http = new HttpClient();
+        private readonly HttpClient _http;
+        private readonly string _apiKey;
 
-        // 🔑 YOUR API KEY
-        private const string API_KEY = "AIzaSyAcnj0PAUDV0JWvXwlnNJEUJ7qVAB5-Hcw";//a added extra
+        public GeminiChatHelper(HttpClient http, IConfiguration config)
+        {
+            _http = http;
+            _apiKey = config["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
+        }
 
         public async Task<string> Ask(List<ChatMessage> conversation)
         {
@@ -26,7 +30,7 @@ namespace SmartJobAPI.Helpers
                 };
 
                 var response = await _http.PostAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}",
+                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}",
                     new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
                 );
 
