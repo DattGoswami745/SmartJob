@@ -1,0 +1,20 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Environment / Secrets
+appsettings.Development.json
+appsettings.Local.json
+secrets.json
+.env
+
+# Visual Studio / Rider
+.vs/
+.idea/
