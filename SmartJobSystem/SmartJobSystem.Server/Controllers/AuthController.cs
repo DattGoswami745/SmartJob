@@ -41,15 +41,29 @@ namespace SmartJobAPI.Controllers
             if (enteredHash != dbHash)
                 return Unauthorized(new { message = "Invalid credentials" });
 
-            HttpContext.Session.SetInt32("UserId", (int)reader["UserId"]);
-            HttpContext.Session.SetString("UserName", reader["FullName"].ToString());
-            HttpContext.Session.SetString("Role", reader["Role"].ToString());
+            int userId = (int)reader["UserId"];
+            string userNameResult = reader["FullName"].ToString();
+            string roleResult = reader["Role"].ToString();
+
+            HttpContext.Session.SetInt32("UserId", userId);
+            HttpContext.Session.SetString("UserName", userNameResult);
+            HttpContext.Session.SetString("Role", roleResult);
+
+            reader.Close(); // Close the reader before executing another command on the same connection
+
+            // --- LOG ACTIVITY ---
+            var logCmd = new SqlCommand(@"
+                INSERT INTO dbo.UserActivityLogs (UserId, Action, ActionDate)
+                VALUES (@UId, 'Logged in to system', GETDATE())
+            ", con);
+            logCmd.Parameters.AddWithValue("@UId", userId);
+            logCmd.ExecuteNonQuery();
 
             return Ok(new
             {
-                userId = reader["UserId"],
-                name = reader["FullName"],
-                role = reader["Role"]
+                userId = userId,
+                name = userNameResult,
+                role = roleResult
             });
         }
 

@@ -75,6 +75,17 @@
                   <input class="form-control premium-input" v-model="profile.preferredLocation" placeholder="e.g. Remote, or New York" />
                 </div>
               </div>
+
+              <!-- RESUME UPLOAD -->
+              <div class="col-12 mt-4">
+                <label class="form-label text-muted small fw-semibold mb-2">Resume (PDF or Word)</label>
+                <div class="d-flex align-items-center gap-3">
+                  <input type="file" ref="resumeInput" class="form-control premium-input flex-grow-1" style="max-width: 400px;" accept=".pdf,.doc,.docx" @change="uploadResume" />
+                  <a v-if="profile.resumePath" :href="`https://localhost:7269${profile.resumePath}`" target="_blank" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                    <FileText size="18" /> View Current Resume
+                  </a>
+                </div>
+              </div>
             </div>
 
             <h5 class="fw-bold text-main mb-4 mt-5 pb-3 border-bottom border-light d-flex align-items-center gap-2">
@@ -149,7 +160,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
-import { CheckCircle2, AlertCircle, UserCircle, Briefcase, Award, Search, Plus, X, Save } from "lucide-vue-next"
+import { CheckCircle2, AlertCircle, UserCircle, Briefcase, Award, Search, Plus, X, Save, FileText } from "lucide-vue-next"
 
 /* PROFILE */
 const profile = ref({
@@ -158,8 +169,11 @@ const profile = ref({
   skills: "",
   experienceYears: 0,
   education: "",
-  preferredLocation: ""
+  preferredLocation: "",
+  resumePath: ""
 })
+
+const resumeInput = ref(null)
 
 /* 🔔 POPUP STATE */
 const successMessage = ref("")
@@ -235,6 +249,42 @@ async function updateProfile() {
   } catch (err) {
     errorMessage.value = "Network error. Failed to update."
     setTimeout(() => errorMessage.value = "", 3000)
+  }
+}
+
+async function uploadResume(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append("file", file)
+
+  successMessage.value = ""
+  errorMessage.value = ""
+
+  try {
+    const res = await fetch("https://localhost:7269/api/profile/upload-resume", {
+      method: "POST",
+      credentials: "include",
+      body: formData
+    })
+
+    if (res.ok) {
+      const data = await res.json()
+      profile.value.resumePath = data.resumePath
+      successMessage.value = "Resume uploaded successfully!"
+      setTimeout(() => successMessage.value = "", 3000)
+    } else {
+      const errData = await res.json()
+      errorMessage.value = errData.message || "Failed to upload resume."
+      setTimeout(() => errorMessage.value = "", 3000)
+      // Reset input if failed so user can try again
+      if (resumeInput.value) resumeInput.value.value = ""
+    }
+  } catch (err) {
+    errorMessage.value = "Network error during upload."
+    setTimeout(() => errorMessage.value = "", 3000)
+    if (resumeInput.value) resumeInput.value.value = ""
   }
 }
 </script>

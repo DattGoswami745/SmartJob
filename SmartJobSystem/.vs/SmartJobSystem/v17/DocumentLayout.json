@@ -1,20 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\helpers\\geminihelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\helpers\\geminihelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\helpers\\geminichathelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\helpers\\geminichathelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|c:\\users\\datt goswami\\onedrive\\desktop\\smartjob\\smartjobsystem\\smartjobsystem.server\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{DC473FA0-85B7-4CB4-B836-2C1786764043}|SmartJobSystem.Server\\SmartJobSystem.Server.csproj|solutionrelative:smartjobsystem.server\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -22,50 +9,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "appsettings.json",
-              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\appsettings.json",
-              "RelativeDocumentMoniker": "SmartJobSystem.Server\\appsettings.json",
-              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\appsettings.json",
-              "RelativeToolTip": "SmartJobSystem.Server\\appsettings.json",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-03-01T05:09:00.005Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "GeminiHelper.cs",
-              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Helpers\\GeminiHelper.cs",
-              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Helpers\\GeminiHelper.cs",
-              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Helpers\\GeminiHelper.cs",
-              "RelativeToolTip": "SmartJobSystem.Server\\Helpers\\GeminiHelper.cs",
-              "ViewState": "AgIAAEAAAAAAAAAAAAAYwDIAAABWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-28T13:56:42.196Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "GeminiChatHelper.cs",
-              "DocumentMoniker": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Helpers\\GeminiChatHelper.cs",
-              "RelativeDocumentMoniker": "SmartJobSystem.Server\\Helpers\\GeminiChatHelper.cs",
-              "ToolTip": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\Helpers\\GeminiChatHelper.cs",
-              "RelativeToolTip": "SmartJobSystem.Server\\Helpers\\GeminiChatHelper.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAADMAAABWAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-02-28T12:28:50.385Z",
-              "EditorCaption": ""
             }
           ]
         }

@@ -43,6 +43,15 @@ public class ApplicationsController : ControllerBase
         cmd.Parameters.AddWithValue("@uid", userId.Value);
         cmd.ExecuteNonQuery();
 
+        // --- LOG ACTIVITY ---
+        var logCmd = new SqlCommand(@"
+            INSERT INTO dbo.UserActivityLogs (UserId, Action, ActionDate)
+            VALUES (@UId, CONCAT('Applied for Job ID: ', @JId), GETDATE())
+        ", con);
+        logCmd.Parameters.AddWithValue("@UId", userId.Value);
+        logCmd.Parameters.AddWithValue("@JId", dto.JobId);
+        logCmd.ExecuteNonQuery();
+
         return Ok(new { message = "Application submitted" });
     }
 

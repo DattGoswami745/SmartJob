@@ -144,7 +144,7 @@
 
             <div class="resume-section mt-4" v-if="profileData.resumePath">
               <h5>Resume</h5>
-              <a :href="profileData.resumePath" target="_blank" class="download-resume-btn">
+              <a :href="`https://localhost:7269${profileData.resumePath}`" target="_blank" class="download-resume-btn">
                 <i class="bi bi-file-earmark-pdf-fill"></i> View / Download Resume
               </a>
             </div>

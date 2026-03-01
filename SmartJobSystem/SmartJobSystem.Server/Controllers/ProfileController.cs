@@ -8,10 +8,12 @@ namespace SmartJobAPI.Controllers
     public class ProfileController : ControllerBase
     {
         private readonly IConfiguration _config;
+        private readonly IWebHostEnvironment _env;
 
-        public ProfileController(IConfiguration config)
+        public ProfileController(IConfiguration config, IWebHostEnvironment env)
         {
             _config = config;
+            _env = env;
         }
 
         /* ================================
@@ -118,6 +120,72 @@ namespace SmartJobAPI.Controllers
             cmd.ExecuteNonQuery();
 
             return Ok(new { message = "Profile updated successfully" });
+        }
+
+        /* ================================
+           UPLOAD RESUME
+        ================================= */
+        [HttpPost("upload-resume")]
+        public async Task<IActionResult> UploadResume(IFormFile file)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Unauthorized(new { message = "Session expired" });
+
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "No file selected." });
+
+            var ext = Path.GetExtension(file.FileName).ToLower();
+            if (ext != ".pdf" && ext != ".doc" && ext != ".docx")
+                return BadRequest(new { message = "Invalid file type. Only PDF and Word documents are allowed." });
+
+            // Ensure directory exists
+            var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "resumes");
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            // Generate unique filename
+            var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            // The URL path to save in DB
+            var dbPath = $"/uploads/resumes/{uniqueFileName}";
+
+            // Update DB
+            using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
+            con.Open();
+
+            // Check if profile exists
+            var checkCmd = new SqlCommand("SELECT COUNT(*) FROM dbo.UserProfiles WHERE UserId=@UserId", con);
+            checkCmd.Parameters.AddWithValue("@UserId", userId);
+            int exists = (int)checkCmd.ExecuteScalar();
+
+            SqlCommand cmd;
+            if (exists == 0)
+            {
+                // INSERT
+                cmd = new SqlCommand(@"
+                    INSERT INTO dbo.UserProfiles (UserId, ResumePath)
+                    VALUES (@UserId, @ResumePath)", con);
+            }
+            else
+            {
+                // UPDATE
+                cmd = new SqlCommand(@"
+                    UPDATE dbo.UserProfiles SET ResumePath=@ResumePath
+                    WHERE UserId=@UserId", con);
+            }
+
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@ResumePath", dbPath);
+            cmd.ExecuteNonQuery();
+
+            return Ok(new { message = "Resume uploaded successfully.", resumePath = dbPath });
         }
     }
 
