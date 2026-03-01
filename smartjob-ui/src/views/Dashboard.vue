@@ -148,11 +148,19 @@
               <td class="text-end pe-4">
                 <button
                   class="btn custom-apply-btn"
-                  :class="job.applied ? 'btn-applied' : 'btn-primary-gradient'"
-                  :disabled="job.applied"
+                  :class="{
+                    'btn-applied': job.applied && !isUserPlaced && job.applicationStatus !== 'Placed', 
+                    'btn-success': job.applicationStatus === 'Placed' || isUserPlaced,
+                    'btn-primary-gradient': !job.applied && !isUserPlaced
+                  }"
+                  :disabled="job.applied || isUserPlaced"
                   @click="apply(job)"
                 >
-                  {{ job.applied ? "Applied" : "Apply Now" }}
+                  {{ 
+                    job.applicationStatus === 'Placed' ? "🎉 Placed!" : 
+                    (isUserPlaced ? "Cannot Apply" : 
+                    (job.applied ? "Applied" : "Apply Now")) 
+                  }}
                 </button>
               </td>
             </tr>
@@ -234,6 +242,11 @@ const filters = ref({
   city: "",
   company: "",
   salary: ""
+})
+
+/* COMPUTED IS PLACED */
+const isUserPlaced = computed(() => {
+  return jobs.value.some(job => job.applicationStatus === 'Placed')
 })
 
 /* COMPUTED FILTERED JOBS */

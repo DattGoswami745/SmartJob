@@ -46,7 +46,8 @@ namespace SmartJobSystem.Server.Controllers
                     CASE 
                         WHEN a.ApplicationId IS NULL THEN 0 
                         ELSE 1 
-                    END AS Applied
+                    END AS Applied,
+                    a.ApplicationStatus
                 FROM Jobs j
                 INNER JOIN Companies c 
                     ON j.CompanyId = c.CompanyId
@@ -76,7 +77,8 @@ namespace SmartJobSystem.Server.Controllers
                     industry = reader["Industry"].ToString(),
                     location = reader["Location"].ToString(),
 
-                    applied = Convert.ToInt32(reader["Applied"]) == 1
+                    applied = Convert.ToInt32(reader["Applied"]) == 1,
+                    applicationStatus = reader["ApplicationStatus"] == DBNull.Value ? null : reader["ApplicationStatus"].ToString()
                 });
             }
 

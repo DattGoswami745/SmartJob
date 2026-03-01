@@ -85,14 +85,14 @@ onMounted(async () => {
 
 function statusClass(status) {
   if (status === "Applied" || status === "Pending") return "bg-warning-subtle text-warning-emphasis"
-  if (status === "Shortlisted") return "bg-success-subtle text-success-emphasis"
+  if (status === "Shortlisted" || status === "Placed") return "bg-success-subtle text-success-emphasis"
   if (status === "Rejected") return "bg-danger-subtle text-danger-emphasis"
   return "bg-secondary-subtle text-secondary-emphasis"
 }
 
 function statusGlowClass(status) {
   if (status === "Applied" || status === "Pending") return "glow-warning"
-  if (status === "Shortlisted") return "glow-success"
+  if (status === "Shortlisted" || status === "Placed") return "glow-success"
   if (status === "Rejected") return "glow-danger"
   return "glow-secondary"
 }
