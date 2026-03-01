@@ -53,7 +53,8 @@ namespace SmartJobSystem.Server.Controllers
                     ON j.CompanyId = c.CompanyId
                 LEFT JOIN Applications a 
                     ON j.JobId = a.JobId AND a.UserId = @uid
-                WHERE j.IsActive = 1
+                WHERE j.IsActive = 1 
+                  AND (j.LastDate IS NULL OR j.LastDate >= CAST(GETDATE() AS DATE))
                 ORDER BY j.PostedDate DESC
             ", con);
 

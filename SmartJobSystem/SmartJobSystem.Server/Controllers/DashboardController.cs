@@ -69,7 +69,7 @@ public class DashboardController : ControllerBase
 
         // 3️⃣ Skill Matching Logic
         var jobCmd = new SqlCommand(
-            "SELECT RequiredSkills FROM Jobs WHERE IsActive=1",
+            "SELECT RequiredSkills FROM Jobs WHERE IsActive=1 AND (LastDate IS NULL OR LastDate >= CAST(GETDATE() AS DATE))",
             con);
 
         var jobReader = jobCmd.ExecuteReader();
@@ -112,7 +112,7 @@ public class DashboardController : ControllerBase
     private int GetTotalJobs(SqlConnection con)
     {
         var cmd = new SqlCommand(
-            "SELECT COUNT(*) FROM Jobs WHERE IsActive=1", con);
+            "SELECT COUNT(*) FROM Jobs WHERE IsActive=1 AND (LastDate IS NULL OR LastDate >= CAST(GETDATE() AS DATE))", con);
 
         return Convert.ToInt32(cmd.ExecuteScalar());
     }

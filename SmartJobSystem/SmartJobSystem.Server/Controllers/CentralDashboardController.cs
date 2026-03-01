@@ -52,7 +52,7 @@ namespace SmartJobSystem.Server.Controllers
         private int GetTotalActiveJobs(SqlConnection con)
         {
             return Convert.ToInt32(new SqlCommand(
-                "SELECT COUNT(*) FROM Jobs WHERE IsActive = 1", con).ExecuteScalar());
+                "SELECT COUNT(*) FROM Jobs WHERE IsActive = 1 AND (LastDate IS NULL OR LastDate >= CAST(GETDATE() AS DATE))", con).ExecuteScalar());
         }
 
         private int GetTotalApplications(SqlConnection con)
