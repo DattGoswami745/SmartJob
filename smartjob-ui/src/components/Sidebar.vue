@@ -1,13 +1,17 @@
 <template>
-  <div class="sidebar d-flex flex-column justify-content-between p-3">
-
+  <div class="sidebar d-flex flex-column justify-content-between p-3" :class="{ 'show': isOpen }">
     <!-- MENU -->
     <div>
-      <h4 class="text-center mb-4">SmartJob</h4>
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="m-0 text-center flex-grow-1">SmartJob</h4>
+        <button class="btn btn-link text-white d-lg-none p-0 ms-2" @click="$emit('close')">
+          <X size="24" />
+        </button>
+      </div>
 
       <ul class="nav flex-column">
         <li v-for="item in menu" :key="item.name" class="nav-item">
-          <router-link :to="item.path" class="nav-link sidebar-link">
+          <router-link :to="item.path" class="nav-link sidebar-link" @click="$emit('close')">
             <component :is="item.icon" size="18" class="me-2" />
             {{ item.name }}
           </router-link>
@@ -43,8 +47,15 @@ import {
   LogOut,
   MessageCircle,
   File,
-  ClipboardList
+  ClipboardList,
+  X
 } from "lucide-vue-next";
+
+defineProps({
+  isOpen: Boolean
+});
+
+defineEmits(['close']);
 
 const menu = [
   { name: "Dashboard", path: "/app", icon: Home },
@@ -77,7 +88,6 @@ const toggleTheme = () => {
 };
 
 /* Logout */
-import Sidebar from "@/components/Sidebar.vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -95,43 +105,46 @@ function logout() {
 <style scoped>
 .sidebar {
   width: 240px;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1000;
   overflow-y: auto;
 }
 
 .sidebar-link {
-  color: #cbd5e1;
-  padding: 10px 12px;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  color: var(--sidebar-text);
+  padding: 12px 16px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 4px;
 }
 
 .sidebar-link:hover {
-  background-color: #0d6efd;
-  color: white;
-  transform: translateX(6px);
+  background-color: var(--sidebar-hover-bg);
+  color: var(--sidebar-hover-text);
+  transform: translateX(4px);
+}
+
+.sidebar-link.router-link-active {
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .icon-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  padding: 8px;
-  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--sidebar-text);
+  padding: 10px;
+  border-radius: 12px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .icon-btn:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  transform: rotate(15deg);
+  background-color: var(--sidebar-active-bg);
+  color: white;
+  transform: translateY(-2px);
 }
 
 .logout:hover {
-  background-color: rgba(239, 68, 68, 0.3);
+  background-color: var(--logout-hover);
 }
 </style>

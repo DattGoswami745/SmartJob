@@ -314,7 +314,13 @@ function isClosingSoon(dateStr) {
 
 <style scoped>
 .user-dashboard-wrapper {
-  padding: 10px;
+  padding: 0;
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-header h2 {
+    font-size: 1.5rem;
+  }
 }
 
 /* Transitions */
@@ -521,7 +527,6 @@ function isClosingSoon(dateStr) {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: center;

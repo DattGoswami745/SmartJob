@@ -114,7 +114,7 @@ function isClosingSoon(dateStr) {
 
 <style scoped>
 .user-dashboard-wrapper {
-  padding: 10px;
+  padding: 0;
 }
 
 /* Gradient Text for Header */

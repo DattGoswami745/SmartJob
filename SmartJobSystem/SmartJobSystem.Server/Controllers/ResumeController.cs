@@ -15,8 +15,9 @@ using Document = DocumentFormat.OpenXml.Wordprocessing.Document;
 [Route("api/resume")]
 public class ResumeController : ControllerBase
 {
-    [HttpGet("suggestions")]
+    [HttpPost("suggestions")]
     public async Task<IActionResult> GetSuggestions(
+    [FromBody] List<string> sections,
     [FromServices] IConfiguration config,
     [FromServices] GeminiHelper ai)
     {
@@ -56,16 +57,14 @@ public class ResumeController : ControllerBase
             ExperienceYears = reader["ExperienceYears"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ExperienceYears"])
         };
 
-        // 🔥 Now AI returns object directly
-        var aiResult = await ai.Generate(profile);
+        // 🔥 Pass sections list to AI
+        var aiResult = await ai.Generate(profile, sections);
 
         return Ok(new
         {
             fullName = profile.FullName,
             email = profile.Email,
-            summary = aiResult.summary,
-            skills = aiResult.skills,
-            experience = aiResult.experience
+            suggestions = aiResult.sections
         });
     }
 

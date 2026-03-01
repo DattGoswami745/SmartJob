@@ -138,9 +138,12 @@ export async function getMyApplications() {
 
 /* ===================== RESUME ===================== */
 
-export async function getResumeSuggestions() {
+export async function getResumeSuggestions(sections) {
   const res = await fetch(`${BASE}/resume/suggestions`, {
-    credentials: "include"
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(sections)
   })
 
   if (!res.ok) throw new Error(await res.text())

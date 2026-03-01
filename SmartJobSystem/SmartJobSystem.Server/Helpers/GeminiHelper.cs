@@ -11,32 +11,30 @@ namespace SmartJobAPI.Helpers
 
         public GeminiHelper(IConfiguration config)
         {
-            _apiKey = config["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
+            _apiKey = config["Gemini:ResumeApiKey"] ?? throw new InvalidOperationException("Gemini:ResumeApiKey is not configured.");
         }
 
-        public async Task<AiResumeResult> Generate(ProfileDto profile)
+        public async Task<AiResumeResult> Generate(ProfileDto profile, List<string> sections)
         {
             try
             {
+                var sectionsList = string.Join(", ", sections);
                 var prompt = $@"
-You are a resume generator AI.
+You are a resume expert. Generate professional suggestions for the following resume sections: {sectionsList}.
 
-Return ONLY VALID JSON. NO explanation. NO markdown.
+RULES:
+1. Return ONLY VALID JSON.
+2. JSON keys MUST exactly match the section titles provided: {sectionsList}.
+3. The value for each key must be a LIST of strings (bullet points).
+4. SPECIAL RULE FOR 'Skills': Return skills as ONE or TWO strings containing groups of skills (e.g., 'Core: Java, C#, SQL. Web: HTML, CSS, JS.'), NOT as a list of individual items.
 
-JSON FORMAT:
-{{
-  ""summary"": [""point1"", ""point2""],
-  ""skills"": [""skill1"", ""skill2""],
-  ""experience"": [""exp1"", ""exp2""]
-}}
-
-Candidate:
+Candidate Info:
 Name: {profile.FullName}
 Email: {profile.Email}
-Skills: {profile.Skills}
-Experience Years: {profile.ExperienceYears}
+Profile Skills: {profile.Skills}
+Experience: {profile.ExperienceYears} years
 Education: {profile.Education}
-Preferred Location: {profile.PreferredLocation}
+Location: {profile.PreferredLocation}
 ";
 
                 var body = new
@@ -50,7 +48,7 @@ Preferred Location: {profile.PreferredLocation}
                 };
 
                 var response = await _http.PostAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={_apiKey}",
+                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}",
                     new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
                 );
 
@@ -61,7 +59,9 @@ Preferred Location: {profile.PreferredLocation}
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return GetFallback("API HTTP Error");
+                    Console.WriteLine($"GEMINI RESUME ERROR ({response.StatusCode}):");
+                    Console.WriteLine(result);
+                    return GetFallback($"API Error ({response.StatusCode}): {result}");
                 }
 
                 using var doc = JsonDocument.Parse(result);
@@ -86,12 +86,12 @@ Preferred Location: {profile.PreferredLocation}
                            .Replace("```", "")
                            .Trim();
 
-                var parsed = JsonSerializer.Deserialize<AiResumeResult>(text);
+                var dict = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(text);
 
-                if (parsed == null)
+                if (dict == null)
                     return GetFallback("Invalid JSON from AI");
 
-                return parsed;
+                return new AiResumeResult { sections = dict };
             }
             catch (Exception ex)
             {
@@ -103,12 +103,10 @@ Preferred Location: {profile.PreferredLocation}
 
         private AiResumeResult GetFallback(string reason)
         {
-            return new AiResumeResult
-            {
-                summary = new List<string> { "Summary" },
-                skills = new List<string> { "Communication", "Problem Solving" },
-                experience = new List<string> { "No experience available" }
-            };
+            var res = new AiResumeResult();
+            res.sections["Summary"] = new List<string> { "ERROR: " + reason };
+            res.sections["Skills"] = new List<string> { "Check Console" };
+            return res;
         }
     }
 }

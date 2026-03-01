@@ -10,7 +10,8 @@ public class ChatController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Ask(
         [FromBody] ChatRequest request,
-        [FromServices] IConfiguration config)
+        [FromServices] IConfiguration config,
+        [FromServices] GeminiChatHelper ai)
     {
         // ✅ Check session
         var userId = HttpContext.Session.GetInt32("UserId");
@@ -65,8 +66,46 @@ public class ChatController : ControllerBase
             Content = request.Message
         });
 
+        // ✅ Fetch Context Data
+        var jobsList = new List<string>();
+        var userProfile = "";
+
+        using (var conContext = new SqlConnection(config.GetConnectionString("DefaultConnection")))
+        {
+            await conContext.OpenAsync();
+            
+            // Fetch Jobs
+            var jobCmd = new SqlCommand("SELECT TOP 10 Title, CompanyName, Location FROM Jobs j JOIN Companies c ON j.CompanyId = c.CompanyId WHERE j.IsActive = 1", conContext);
+            using (var reader = await jobCmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    jobsList.Add($"{reader["Title"]} at {reader["CompanyName"]} ({reader["Location"]})");
+                }
+            }
+
+            // Fetch User Profile
+            var profileCmd = new SqlCommand("SELECT Skills, ExperienceYears, Education FROM UserProfiles WHERE UserId = @UserId", conContext);
+            profileCmd.Parameters.AddWithValue("@UserId", userId);
+            using (var reader = await profileCmd.ExecuteReaderAsync())
+            {
+                if (await reader.ReadAsync())
+                {
+                    userProfile = $"Skills: {reader["Skills"]}, Experience: {reader["ExperienceYears"]} years, Education: {reader["Education"]}";
+                }
+            }
+        }
+
+        var systemContext = $@"
+You are the personal career assistant for the Smart Job Management System.
+Current User: {fullName}. Profile: {userProfile}.
+Available Jobs in our system: {string.Join(" | ", jobsList)}.
+
+Your Goal: Help the user with their career, suggest jobs from the list above if they match their skills, and be encouraging. Keep answers simple and helpful.
+";
+
         // IMPORTANT: Update your GeminiChatHelper to accept conversation
-        var aiResponse = await ai.Ask(conversation);
+        var aiResponse = await ai.Ask(conversation, systemContext);
 
         // Add AI response
         conversation.Add(new ChatMessage

@@ -128,14 +128,20 @@ async function scrollToBottom() {
 <style scoped>
 <style scoped>
 .user-dashboard-wrapper {
-  padding: 10px;
-  height: calc(100vh - 70px); /* Adjust based on navbar height */
+  padding: 0;
+  height: calc(100vh - var(--header-height, 60px) - 2rem);
+}
+
+@media (max-width: 991.98px) {
+  .user-dashboard-wrapper {
+     height: calc(100vh - var(--header-height, 60px) - 1rem);
+  }
 }
 
 .premium-table-card {
   background: var(--bg-card);
   border-radius: 20px;
-  max-height: 100%;
+  height: 100%;
 }
 
 .chat-header {
@@ -175,11 +181,17 @@ async function scrollToBottom() {
 }
 
 .chat-bubble {
-  padding: 14px 18px;
-  border-radius: 20px;
-  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  max-width: 85%;
   position: relative;
   font-size: 0.95rem;
+}
+
+@media (max-width: 575.98px) {
+  .chat-bubble {
+    max-width: 95%;
+  }
 }
 
 .chat-bubble.user {

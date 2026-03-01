@@ -11,18 +11,37 @@ namespace SmartJobAPI.Helpers
         public GeminiChatHelper(HttpClient http, IConfiguration config)
         {
             _http = http;
-            _apiKey = config["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
+            _apiKey = config["Gemini:ChatApiKey"] ?? throw new InvalidOperationException("Gemini:ChatApiKey is not configured.");
         }
 
-        public async Task<string> Ask(List<ChatMessage> conversation)
+        public async Task<string> Ask(List<ChatMessage> conversation, string systemContext = "")
         {
             try
             {
-                var contents = conversation.Select(m => new
+                var contents = new List<object>();
+
+                if (!string.IsNullOrEmpty(systemContext))
                 {
-                    role = m.Role,
-                    parts = new[] { new { text = m.Content } }
-                }).ToList();
+                    contents.Add(new
+                    {
+                        role = "user",
+                        parts = new[] { new { text = "SYSTEM INSTRUCTIONS: " + systemContext } }
+                    });
+                    contents.Add(new
+                    {
+                        role = "model",
+                        parts = new[] { new { text = "Understood. I will act as a personal career assistant with this context." } }
+                    });
+                }
+
+                foreach (var m in conversation)
+                {
+                    contents.Add(new
+                    {
+                        role = m.Role,
+                        parts = new[] { new { text = m.Content } }
+                    });
+                }
 
                 var body = new
                 {
@@ -37,7 +56,11 @@ namespace SmartJobAPI.Helpers
                 var result = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
-                    return "Gemini API error.";
+                {
+                    Console.WriteLine($"GEMINI CHAT ERROR ({response.StatusCode}):");
+                    Console.WriteLine(result);
+                    return $"AI API Error ({response.StatusCode}): {result}";
+                }
 
                 using var doc = JsonDocument.Parse(result);
 

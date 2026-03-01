@@ -70,56 +70,37 @@
           </div>
         </div>
 
-        <!-- RIGHT SIDE : AI SUGGESTIONS -->
         <div class="col-lg-5">
-          <div class="card suggestion-card shadow-lg border-0">
+          <div class="card suggestion-card shadow-lg border-0 suggestion-sticky">
             <div class="card-body p-4">
-              <h5 class="fw-bold mb-3">AI Suggestions</h5>
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold m-0">AI Suggestions</h5>
+                <button class="btn btn-sm btn-primary rounded-pill px-3" @click="refreshSuggestions" :disabled="loading">
+                  <span v-if="loading" class="spinner-border spinner-border-sm me-1"></span>
+                  Refresh
+                </button>
+              </div>
 
-              <div v-if="loading" class="text-center py-4">
-                <div class="spinner-border text-primary"></div>
-                <p class="mt-2 text-muted">Generating suggestions...</p>
+              <div v-if="loading" class="text-center py-5">
+                <div class="spinner-border text-primary mb-3"></div>
+                <p class="text-muted small">Generating tailored suggestions...</p>
               </div>
 
               <div v-else>
-                <div class="suggestion-section">
-                  <h6>Summary</h6>
-                  <draggable
-                    v-model="availableItems.summary"
-                    :group="{ name: 'shared_items', pull:'clone', put:false }"
-                    :clone="cloneItem"
-                    :sort="false"
-                    item-key="id">
-                    <template #item="{ element }">
-                      <div class="suggestion-item">{{ element.text }}</div>
-                    </template>
-                  </draggable>
+                <div v-if="Object.keys(availableItems).length === 0" class="text-center py-4 text-muted small">
+                  No suggestions available. Try adding sections or clicking Refresh.
                 </div>
-
-                <div class="suggestion-section mt-4">
-                  <h6>Skills</h6>
+                
+                <div v-for="(items, category) in availableItems" :key="category" class="suggestion-section mb-4">
+                  <h6 class="text-uppercase small fw-bold text-primary border-bottom pb-1 mb-2">{{ category }}</h6>
                   <draggable
-                    v-model="availableItems.skills"
+                    v-model="availableItems[category]"
                     :group="{ name: 'shared_items', pull:'clone', put:false }"
                     :clone="cloneItem"
                     :sort="false"
                     item-key="id">
                     <template #item="{ element }">
-                      <div class="suggestion-item">{{ element.text }}</div>
-                    </template>
-                  </draggable>
-                </div>
-
-                <div class="suggestion-section mt-4">
-                  <h6>Experience</h6>
-                  <draggable
-                    v-model="availableItems.experience"
-                    :group="{ name: 'shared_items', pull:'clone', put:false }"
-                    :clone="cloneItem"
-                    :sort="false"
-                    item-key="id">
-                    <template #item="{ element }">
-                      <div class="suggestion-item">{{ element.text }}</div>
+                      <div class="suggestion-item border shadow-sm">{{ element.text }}</div>
                     </template>
                   </draggable>
                 </div>
@@ -147,35 +128,50 @@ const resume = ref({
     { id: "sec_3", title: "Experience", items: [] }
   ] 
 })
-const availableItems = ref({ summary:[], skills:[], experience:[] })
+const availableItems = ref({})
 const loading = ref(true)
 
 function cloneItem(item){
   return { id: "item_" + Date.now() + Math.random(), text: item.text }
 }
 
-onMounted(async () => {
-  try{
-    const data = await getResumeSuggestions()
-    let id = 1
-
-    resume.value.fullName = data.fullName || "Your Name"
-    resume.value.email = data.email || "email@example.com"
-
-    availableItems.value.summary = (data.summary || []).map(t => ({ id:"s_"+(id++), text:t }))
-    availableItems.value.skills = (data.skills || []).map(t => ({ id:"s_"+(id++), text:t }))
-    availableItems.value.experience = (data.experience || []).map(t => ({ id:"s_"+(id++), text:t }))
+async function refreshSuggestions() {
+  loading.value = true
+  try {
+    const sectionsToRequest = resume.value.sections.map(s => s.title)
+    const data = await getResumeSuggestions(sectionsToRequest)
+    
+    resume.value.fullName = data.fullName || resume.value.fullName
+    resume.value.email = data.email || resume.value.email
+    
+    const newSuggestions = {}
+    let uniqueId = 1
+    
+    if (data.suggestions) {
+      Object.keys(data.suggestions).forEach(key => {
+        newSuggestions[key] = data.suggestions[key].map(t => ({ 
+          id: `ai_${uniqueId++}_${Date.now()}`, 
+          text: t 
+        }))
+      })
+    }
+    
+    availableItems.value = newSuggestions
   }
   catch(err){
-    console.warn("AI failed to generate suggestions.")
+    console.error("AI Error:", err)
+    alert("AI failed to generate suggestions: " + err.message)
   }
   finally{
     loading.value = false
-    // trigger auto resize for any textareas
     setTimeout(() => {
       document.querySelectorAll('.stylish-textarea').forEach(el => autoResize({target: el}))
     }, 100)
   }
+}
+
+onMounted(() => {
+  refreshSuggestions()
 })
 
 function addSection() {
@@ -238,6 +234,18 @@ async function handleDownload(){
 
 .resume-card, .suggestion-card{
   border-radius:20px;
+}
+
+.suggestion-sticky {
+  position: sticky;
+  top: 2rem;
+  z-index: 10;
+}
+
+@media (max-width: 991.98px) {
+  .suggestion-sticky {
+    position: static;
+  }
 }
 
 .section-title-input {
