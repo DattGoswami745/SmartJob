@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using SmartJobAPI.Models;
+using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobAPI.Helpers
 {
@@ -11,7 +12,9 @@ namespace SmartJobAPI.Helpers
 
         public GeminiHelper(IConfiguration config)
         {
-            _apiKey = config["Gemini:ResumeApiKey"] ?? throw new InvalidOperationException("Gemini:ResumeApiKey is not configured.");
+            var encryptedKey = config["Gemini:ResumeApiKey"] ?? throw new InvalidOperationException("Gemini:ResumeApiKey is not configured.");
+            var encryptionKey = config["SecuritySettings:EncryptionKey"] ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured.");
+            _apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
         }
 
         public async Task<AiResumeResult> Generate(ProfileDto profile, List<string> sections)

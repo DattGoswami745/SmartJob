@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobAPI.Helpers
 {
@@ -11,7 +12,9 @@ namespace SmartJobAPI.Helpers
         public GeminiChatHelper(HttpClient http, IConfiguration config)
         {
             _http = http;
-            _apiKey = config["Gemini:ChatApiKey"] ?? throw new InvalidOperationException("Gemini:ChatApiKey is not configured.");
+            var encryptedKey = config["Gemini:ChatApiKey"] ?? throw new InvalidOperationException("Gemini:ChatApiKey is not configured.");
+            var encryptionKey = config["SecuritySettings:EncryptionKey"] ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured.");
+            _apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
         }
 
         public async Task<string> Ask(List<ChatMessage> conversation, string systemContext = "")

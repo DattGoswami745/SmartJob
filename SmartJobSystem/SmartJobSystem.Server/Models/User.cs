@@ -3,11 +3,14 @@ namespace SmartJobSystem.Server.Models
     public class User
     {
         public int UserId { get; set; }
-        public string FullName { get; set; }    // Add this
-        public string Email { get; set; }
-        public string PasswordHash { get; set; } // Add this
-        public string Role { get; set; }         // Add this
-        public DateTime CreatedAt { get; set; }  // Add this
-        public bool IsActive { get; set; }       // Add this
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? PasswordHash { get; set; }
+        public string? Role { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsEmailVerified { get; set; }
+        public string? EmailOTP { get; set; }
+        public DateTime? EmailOTPExpiry { get; set; }
     }
 }

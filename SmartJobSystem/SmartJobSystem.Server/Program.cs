@@ -1,5 +1,6 @@
 ﻿using SmartJobAPI.Helpers;
 using SmartJobSystem.Server.Data;
+using SmartJobSystem.Server.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<DbHelper>();
 builder.Services.AddSingleton<GeminiHelper>();
 builder.Services.AddHttpClient<GeminiChatHelper>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 /* Session */
 builder.Services.AddDistributedMemoryCache();

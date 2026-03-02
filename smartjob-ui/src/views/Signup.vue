@@ -132,14 +132,22 @@
           <small class="m-0">{{ otpError }}</small>
         </div>
 
-        <button type="button" class="btn btn-primary-gradient w-100 py-3 mb-3" :disabled="isVerifying" @click="handleVerifyOtp">
+        <!-- TIMER -->
+        <div class="text-center mb-3">
+          <div :class="['timer-badge', { 'text-danger': timerSeconds < 60 }]">
+            <Clock size="16" class="me-1" />
+            <span>{{ formatTime(timerSeconds) }}</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary-gradient w-100 py-3 mb-3" :disabled="isVerifying || timerSeconds <= 0" @click="handleVerifyOtp">
           <span v-if="isVerifying" class="spinner-border spinner-border-sm me-2"></span>
-          {{ isVerifying ? 'Verifying...' : 'Verify & Sign In' }}
+          {{ isVerifying ? 'Verifying...' : (timerSeconds > 0 ? 'Verify & Sign In' : 'OTP Expired') }}
         </button>
 
         <p class="text-center text-muted small m-0 mb-2">
           Didn't receive the code? 
-          <a href="#" class="text-primary text-decoration-none fw-bold ms-1" @click.prevent="handleResendOtp">Resend OTP</a>
+          <a href="#" :class="['text-primary text-decoration-none fw-bold ms-1', { 'opacity-50 pointer-events-none': timerSeconds > 0 && !canResend }]" @click.prevent="handleResendOtp">Resend OTP</a>
         </p>
         
         <p v-if="resendMessage" class="text-center text-success small fw-bold m-0 mt-2">{{ resendMessage }}</p>
@@ -149,10 +157,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, onUnmounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { signupUser, verifyEmail, resendOTP } from "../services/api"
-import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle } from "lucide-vue-next"
+import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Clock } from "lucide-vue-next"
 
 onMounted(() => {
   document.body.classList.remove("theme-dark")
@@ -183,6 +191,42 @@ const showOtpModal = ref(false)
 const isVerifying = ref(false)
 const otpError = ref("")
 const resendMessage = ref("")
+
+// Timer Logic
+const timerSeconds = ref(300) // 5 minutes
+const canResend = ref(true)
+let intervalId = null
+
+function startTimer() {
+  stopTimer()
+  timerSeconds.value = 300
+  canResend.value = false
+  intervalId = setInterval(() => {
+    if (timerSeconds.value > 0) {
+      timerSeconds.value--
+    } else {
+      stopTimer()
+      canResend.value = true
+    }
+  }, 1000)
+}
+
+function stopTimer() {
+  if (intervalId) clearInterval(intervalId)
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+onUnmounted(() => stopTimer())
+
+watch(showOtpModal, (newVal) => {
+  if (newVal) startTimer()
+  else stopTimer()
+})
 
 async function handleSignup() {
   // Reset errors
@@ -252,7 +296,8 @@ async function handleResendOtp() {
   resendMessage.value = ""
   try {
     await resendOTP(email.value)
-    resendMessage.value = "New OTP sent (111111)!"
+    resendMessage.value = "New OTP sent!"
+    startTimer()
     setTimeout(() => { resendMessage.value = "" }, 3000)
   } catch(err) {
     otpError.value = err.message || "Failed to resend OTP"
@@ -364,5 +409,33 @@ async function handleResendOtp() {
 @keyframes modalScale {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+.timer-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.timer-badge.text-danger {
+  background: #fef2f2;
+  color: #ef4444;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pointer-events-none {
+  pointer-events: none;
 }
 </style>
