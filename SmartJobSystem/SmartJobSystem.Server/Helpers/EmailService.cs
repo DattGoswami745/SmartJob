@@ -36,6 +36,18 @@ namespace SmartJobSystem.Server.Helpers
                 EnableSsl = true
             };
 
+            var htmlView = AlternateView.CreateAlternateViewFromString(body, null, "text/html");
+            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "sjslogo.png");
+            if (System.IO.File.Exists(logoPath))
+            {
+                var logo = new LinkedResource(logoPath, "image/png")
+                {
+                    ContentId = "sjslogocid"
+                };
+                logo.ContentType.Name = "sjslogo.png";
+                htmlView.LinkedResources.Add(logo);
+            }
+
             var mailMessage = new MailMessage
             {
                 From = new MailAddress(fromEmail ?? smtpUser,"SmartJobSystem"),
@@ -43,6 +55,8 @@ namespace SmartJobSystem.Server.Helpers
                 Body = body,
                 IsBodyHtml = true
             };
+            
+            mailMessage.AlternateViews.Add(htmlView);
 
             mailMessage.To.Add(toEmail);
 

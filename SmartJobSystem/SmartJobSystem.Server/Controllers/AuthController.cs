@@ -141,6 +141,9 @@ namespace SmartJobAPI.Controllers
                 {
                     string emailBody = $@"
                         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
+                            <div style='text-align: center; margin-bottom: 20px;'>
+                                <img src='cid:sjslogocid' alt='SmartJob Logo' style='max-width: 150px; height: auto;' />
+                            </div>
                             <h2 style='color: #4CAF50; text-align: center;'>Welcome to SmartJob!</h2>
                             <p>Hello <strong>{dto.FullName}</strong>,</p>
                             <p>Thank you for signing up. To complete your registration, please use the following One-Time Password (OTP) to verify your email address:</p>
@@ -290,6 +293,9 @@ namespace SmartJobAPI.Controllers
                 // 📧 Send Email
                 string emailBody = $@"
                     <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
+                        <div style='text-align: center; margin-bottom: 20px;'>
+                            <img src='cid:sjslogocid' alt='SmartJob Logo' style='max-width: 150px; height: auto;' />
+                        </div>
                         <h2 style='color: #2196F3; text-align: center;'>New Verification OTP</h2>
                         <p>Hello,</p>
                         <p>We received a request for a new verification code for your SmartJob account. Please use the OTP below:</p>

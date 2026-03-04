@@ -16,7 +16,6 @@ namespace SmartJobSystem.Server.Models
         public bool IsActive { get; set; }
 
         // Optional property for UI display
-        [JsonIgnore]
         public string? CompanyName { get; set; }
     }
 }
