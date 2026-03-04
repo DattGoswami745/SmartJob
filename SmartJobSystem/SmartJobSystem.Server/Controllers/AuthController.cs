@@ -99,7 +99,7 @@ namespace SmartJobAPI.Controllers
                 // 🎲 Generate OTP
                 string otp = new Random().Next(100000, 999999).ToString();
                 string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
-                DateTime expiry = DateTime.UtcNow.AddMinutes(5);
+                DateTime expiry = DateTime.UtcNow.AddMinutes(2);
 
                 // 🧑 Insert into Users + GET UserId
                 var insertUser = new SqlCommand(@"
@@ -147,7 +147,7 @@ namespace SmartJobAPI.Controllers
                             <div style='background-color: #f9f9f9; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; border-radius: 5px;'>
                                 {otp}
                             </div>
-                            <p style='color: #666; font-size: 14px;'>This OTP is valid for <strong>5 minutes</strong>. If you did not request this email, please ignore it.</p>
+                            <p style='color: #666; font-size: 14px;'>This OTP is valid for <strong>2 minutes</strong>. If you did not request this email, please ignore it.</p>
                             <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;'>
                             <p style='text-align: center; color: #999; font-size: 12px;'>&copy; {DateTime.Now.Year} SmartJob System. All rights reserved.</p>
                         </div>";
@@ -255,50 +255,61 @@ namespace SmartJobAPI.Controllers
                 return BadRequest(new { message = "Email is required." });
             }
 
-            using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
-            con.Open();
+            try
+            {
+                using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
+                con.Open();
 
-            var cmd = new SqlCommand("SELECT UserId FROM Users WHERE Email = @Email AND IsActive = 1", con);
-            cmd.Parameters.AddWithValue("@Email", dto.Email);
-            using var reader = cmd.ExecuteReader();
+                var cmd = new SqlCommand("SELECT UserId FROM Users WHERE Email = @Email AND IsActive = 1", con);
+                cmd.Parameters.AddWithValue("@Email", dto.Email);
+                using var reader = cmd.ExecuteReader();
 
-            if (!reader.Read())
-                return NotFound(new { message = "User not found" });
-            
-            reader.Close();
+                if (!reader.Read())
+                {
+                    reader.Close();
+                    return NotFound(new { message = "User not found" });
+                }
+                
+                reader.Close();
 
-            // 🎲 Generate NEW OTP
-            string otp = new Random().Next(100000, 999999).ToString();
-            string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
-            DateTime expiry = DateTime.UtcNow.AddMinutes(5);
+                // 🎲 Generate NEW OTP
+                string otp = new Random().Next(100000, 999999).ToString();
+                string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
+                DateTime expiry = DateTime.UtcNow.AddMinutes(2);
 
-            var updateCmd = new SqlCommand(@"
-                UPDATE Users 
-                SET EmailOTP = @OTP, EmailOTPExpiry = @Expiry 
-                WHERE Email = @Email
-            ", con);
-            updateCmd.Parameters.AddWithValue("@OTP", encryptedOtp);
-            updateCmd.Parameters.AddWithValue("@Expiry", expiry);
-            updateCmd.Parameters.AddWithValue("@Email", dto.Email);
-            updateCmd.ExecuteNonQuery();
+                var updateCmd = new SqlCommand(@"
+                    UPDATE Users 
+                    SET EmailOTP = @OTP, EmailOTPExpiry = @Expiry 
+                    WHERE Email = @Email
+                ", con);
+                updateCmd.Parameters.AddWithValue("@OTP", encryptedOtp);
+                updateCmd.Parameters.AddWithValue("@Expiry", expiry);
+                updateCmd.Parameters.AddWithValue("@Email", dto.Email);
+                updateCmd.ExecuteNonQuery();
 
-            // 📧 Send Email
-            string emailBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
-                    <h2 style='color: #2196F3; text-align: center;'>New Verification OTP</h2>
-                    <p>Hello,</p>
-                    <p>We received a request for a new verification code for your SmartJob account. Please use the OTP below:</p>
-                    <div style='background-color: #f0f7ff; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #0d47a1; margin: 20px 0; border-radius: 5px;'>
-                        {otp}
-                    </div>
-                    <p style='color: #666; font-size: 14px;'>This OTP is valid for <strong>5 minutes</strong>. If you did not request this, your account is still secure.</p>
-                    <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;'>
-                    <p style='text-align: center; color: #999; font-size: 12px;'>&copy; {DateTime.Now.Year} SmartJob System. All rights reserved.</p>
-                </div>";
+                // 📧 Send Email
+                string emailBody = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;'>
+                        <h2 style='color: #2196F3; text-align: center;'>New Verification OTP</h2>
+                        <p>Hello,</p>
+                        <p>We received a request for a new verification code for your SmartJob account. Please use the OTP below:</p>
+                        <div style='background-color: #f0f7ff; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #0d47a1; margin: 20px 0; border-radius: 5px;'>
+                            {otp}
+                        </div>
+                        <p style='color: #666; font-size: 14px;'>This OTP is valid for <strong>2 minutes</strong>. If you did not request this, your account is still secure.</p>
+                        <hr style='border: 0; border-top: 1px solid #eee; margin: 20px 0;'>
+                        <p style='text-align: center; color: #999; font-size: 12px;'>&copy; {DateTime.Now.Year} SmartJob System. All rights reserved.</p>
+                    </div>";
 
-            await _emailService.SendEmailAsync(dto.Email ?? "", "Your New Verification Code", emailBody);
+                await _emailService.SendEmailAsync(dto.Email ?? "", "Your New Verification Code", emailBody);
 
-            return Ok(new { message = "OTP resent successfully" });
+                return Ok(new { message = "OTP resent successfully" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Resend OTP error: {ex}");
+                return StatusCode(500, new { message = $"Internal Error during Resend OTP: {ex.Message}" });
+            }
         }
     }
 

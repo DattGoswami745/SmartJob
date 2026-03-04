@@ -14,11 +14,14 @@ namespace SmartJobSystem.Server.Helpers
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var smtpHost = _config["SmtpSettings:Host"];
-            var smtpPort = int.Parse(_config["SmtpSettings:Port"] ?? "587");
-            var smtpUser = _config["SmtpSettings:Username"];
-            var smtpPass = _config["SmtpSettings:Password"];
-            var fromEmail = _config["SmtpSettings:FromEmail"];
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"];
+
+            var smtpHost = SecurityHelper.Decrypt(_config["SmtpSettings:Host"], encryptionKey);
+            var smtpPortStr = SecurityHelper.Decrypt(_config["SmtpSettings:Port"], encryptionKey);
+            var smtpPort = int.Parse(string.IsNullOrEmpty(smtpPortStr) ? "587" : smtpPortStr);
+            var smtpUser = SecurityHelper.Decrypt(_config["SmtpSettings:Username"], encryptionKey);
+            var smtpPass = SecurityHelper.Decrypt(_config["SmtpSettings:Password"], encryptionKey);
+            var fromEmail = SecurityHelper.Decrypt(_config["SmtpSettings:FromEmail"], encryptionKey);
 
             if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUser))
             {
@@ -35,7 +38,7 @@ namespace SmartJobSystem.Server.Helpers
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(fromEmail ?? smtpUser),
+                From = new MailAddress(fromEmail ?? smtpUser,"SmartJobSystem"),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true
@@ -43,7 +46,20 @@ namespace SmartJobSystem.Server.Helpers
 
             mailMessage.To.Add(toEmail);
 
-            await client.SendMailAsync(mailMessage);
+            try
+            {
+                await client.SendMailAsync(mailMessage);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EMAIL ERROR] Failed to send email to {toEmail} - Subject: {subject}");
+                Console.WriteLine($"[EMAIL EXCEPTION] {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                     Console.WriteLine($"[EMAIL INNER EXCEPTION] {ex.InnerException.Message}");
+                }
+                throw; // Rethrow to let the caller handle it if needed
+            }
         }
     }
 }

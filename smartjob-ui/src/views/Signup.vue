@@ -193,13 +193,13 @@ const otpError = ref("")
 const resendMessage = ref("")
 
 // Timer Logic
-const timerSeconds = ref(300) // 5 minutes
+const timerSeconds = ref(120) // 2 minutes
 const canResend = ref(true)
 let intervalId = null
 
 function startTimer() {
   stopTimer()
-  timerSeconds.value = 300
+  timerSeconds.value = 120
   canResend.value = false
   intervalId = setInterval(() => {
     if (timerSeconds.value > 0) {
