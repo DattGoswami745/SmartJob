@@ -29,7 +29,7 @@ namespace SmartJobAPI.Controllers
             con.Open();
 
             var cmd = new SqlCommand(@"
-                SELECT UserId, FullName, Role, PasswordHash
+                SELECT UserId, FullName, Role, PasswordHash, CompanyId
                 FROM Users
                 WHERE Email=@Email AND IsActive=1
             ", con);
@@ -44,15 +44,21 @@ namespace SmartJobAPI.Controllers
             string dbHash = reader["PasswordHash"]?.ToString() ?? "";
 
             if (enteredHash != dbHash)
-                return Unauthorized(new { message = "Invalid credentials" });
+            {
+                // Debugging (Remove in production)
+                Console.WriteLine($"Login failed for {dto.Email}: Hash mismatch.");
+                return Unauthorized(new { message = "Invalid password" });
+            }
 
             int userId = (int)(reader["UserId"] ?? 0);
-            string userNameResult = reader["FullName"]?.ToString() ?? "";
-            string roleResult = reader["Role"]?.ToString() ?? "";
+            string userNameResult = (reader["FullName"]?.ToString() ?? "").Trim();
+            string roleResult = (reader["Role"]?.ToString() ?? "").Trim();
+            int? companyIdResult = reader["CompanyId"] != DBNull.Value ? (int)reader["CompanyId"] : (int?)null;
 
             HttpContext.Session.SetInt32("UserId", userId);
             HttpContext.Session.SetString("UserName", userNameResult);
             HttpContext.Session.SetString("Role", roleResult);
+            if (companyIdResult != null) HttpContext.Session.SetInt32("CompanyId", companyIdResult.Value);
 
             reader.Close(); // Close the reader before executing another command on the same connection
 
@@ -101,12 +107,15 @@ namespace SmartJobAPI.Controllers
                 string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
                 DateTime expiry = DateTime.UtcNow.AddMinutes(2);
 
-                // 🧑 Insert into Users + GET UserId
+                // 🧑 Insert into Users
+                string role = (dto.Role == "Company") ? "Company" : "User";
+                
                 var insertUser = new SqlCommand(@"
-                    INSERT INTO Users (FullName, Email, PasswordHash, Role, IsActive, IsEmailVerified, EmailOTP, EmailOTPExpiry, CreatedAt)
+                    INSERT INTO Users (FullName, Email, PasswordHash, Role, IsActive, IsEmailVerified, EmailOTP, EmailOTPExpiry, CreatedAt, CompanyId)
                     OUTPUT INSERTED.UserId
-                    VALUES (@Name, @Email, @Password, 'User', 1, 0, @OTP, @Expiry, GETDATE())
+                    VALUES (@Name, @Email, @Password, @Role, 1, 0, @OTP, @Expiry, GETDATE(), NULL)
                 ", con);
+                insertUser.Parameters.AddWithValue("@Role", role);
 
                 insertUser.Parameters.AddWithValue("@Name", dto.FullName ?? "");
                 insertUser.Parameters.AddWithValue("@Email", dto.Email ?? "");
@@ -204,7 +213,8 @@ namespace SmartJobAPI.Controllers
             {
                 userId = userId,
                 userName = HttpContext.Session.GetString("UserName"),
-                role = HttpContext.Session.GetString("Role")
+                role = HttpContext.Session.GetString("Role"),
+                companyId = HttpContext.Session.GetInt32("CompanyId")
             });
         }
 
@@ -317,6 +327,48 @@ namespace SmartJobAPI.Controllers
                 return StatusCode(500, new { message = $"Internal Error during Resend OTP: {ex.Message}" });
             }
         }
+
+        // ================= SEED DEMO COMPANY (TEMPORARY) =================
+        [HttpGet("seed-demo")]
+        public async Task<IActionResult> SeedDemo()
+        {
+            try
+            {
+                using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
+                await con.OpenAsync();
+
+                // Delete if exists to ensure refreshed data
+                var deleteOld = new SqlCommand("DELETE FROM Users WHERE Email='hr@techcorp.com'", con);
+                await deleteOld.ExecuteNonQueryAsync();
+
+                // Insert User (Force Active and Verified)
+                var insertUser = new SqlCommand(@"
+                    INSERT INTO Users (FullName, Email, PasswordHash, Role, IsActive, IsEmailVerified, CreatedAt)
+                    OUTPUT INSERTED.UserId
+                    VALUES ('TechCorp Solutions', 'hr@techcorp.com', @Password, 'Company', 1, 1, GETDATE())
+                ", con);
+                insertUser.Parameters.AddWithValue("@Password", PasswordHelper.HashPassword("Password123!"));
+                int userId = Convert.ToInt32(await insertUser.ExecuteScalarAsync());
+
+                // Insert Profile
+                var insertProfile = new SqlCommand("INSERT INTO UserProfiles (UserId) VALUES (@UserId)", con);
+                insertProfile.Parameters.AddWithValue("@UserId", userId);
+                await insertProfile.ExecuteNonQueryAsync();
+
+                return Ok(new { 
+                    message = "Demo company created/reset successfully!", 
+                    credentials = new {
+                        email = "hr@techcorp.com",
+                        password = "Password123!",
+                        role = "Company"
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 
     // ================= DTOs =================
@@ -331,6 +383,7 @@ namespace SmartJobAPI.Controllers
         public string? FullName { get; set; }
         public string? Email { get; set; }
         public string? Password { get; set; }
+        public string? Role { get; set; }
     }
 
     public class VerifyEmailDto

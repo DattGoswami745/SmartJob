@@ -12,5 +12,6 @@ namespace SmartJobSystem.Server.Models
         public bool IsEmailVerified { get; set; }
         public string? EmailOTP { get; set; }
         public DateTime? EmailOTPExpiry { get; set; }
+        public int? CompanyId { get; set; }
     }
 }

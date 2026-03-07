@@ -113,6 +113,12 @@ async function handleLogin() {
 
     if (res.role === "Central") {
       router.push("/central/dashboard")
+    } else if (res.role === "Company") {
+      if (res.companyId) {
+        router.push("/company/dashboard")
+      } else {
+        router.push("/company/setup")
+      }
     } else {
       router.push("/app")
     }
@@ -122,7 +128,6 @@ async function handleLogin() {
 }
 </script>
 
-<style scoped>
 <style scoped>
 .login-wrapper {
   animation: fadeIn 0.4s ease-in-out;

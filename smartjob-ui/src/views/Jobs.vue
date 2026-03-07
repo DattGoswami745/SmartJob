@@ -4,10 +4,7 @@
       <div class="d-flex align-items-center justify-content-between mb-2">
         <h2 class="fw-bold m-0 gradient-text">Jobs</h2>
         <div class="d-flex gap-2">
-          <!-- Placement Button -->
-          <button v-if="!isUserPlaced" class="btn btn-success d-flex align-items-center gap-2 rounded-pill px-3 py-1 fw-bold" @click="showPlacementModal = true">
-            I Got Placed!
-          </button>
+          <!-- Placement Button removed -->
           
           <button class="btn btn-outline-primary d-flex align-items-center gap-2 rounded-pill px-3 py-1" @click="showFilters = !showFilters">
             <Filter size="16" /> <span class="d-none d-sm-inline">{{ showFilters ? 'Hide Filters' : 'Filters' }}</span>
@@ -97,18 +94,13 @@
               <button
                 class="btn custom-btn flex-grow-1"
                 :class="{
-                  'btn-applied': job.applied && !isUserPlaced && job.applicationStatus !== 'Placed', 
-                  'btn-success': job.applicationStatus === 'Placed' || isUserPlaced,
-                  'btn-primary-gradient': !job.applied && !isUserPlaced
+                  'btn-applied': job.applied, 
+                  'btn-primary-gradient': !job.applied
                 }"
-                :disabled="job.applied || isUserPlaced"
+                :disabled="job.applied"
                 @click="apply(job)"
               >
-                {{ 
-                  job.applicationStatus === 'Placed' ? "Placed!" : 
-                  (isUserPlaced ? "Cannot Apply" : 
-                  (job.applied ? "Applied" : "Apply Now")) 
-                }}
+                {{ job.applied ? "Applied" : "Apply Now" }}
               </button>
             </div>
           </div>
@@ -210,83 +202,20 @@
             <button
               class="btn custom-btn px-5"
               :class="{
-                'btn-applied': selectedJob.applied && !isUserPlaced && selectedJob.applicationStatus !== 'Placed', 
-                'btn-success': selectedJob.applicationStatus === 'Placed' || isUserPlaced,
-                'btn-primary-gradient': !selectedJob.applied && !isUserPlaced
+                'btn-applied': selectedJob.applied, 
+                'btn-primary-gradient': !selectedJob.applied
               }"
-              :disabled="selectedJob.applied || isUserPlaced"
+              :disabled="selectedJob.applied"
               @click="apply(selectedJob)"
             >
-              {{ 
-                selectedJob.applicationStatus === 'Placed' ? "Placed!" : 
-                (isUserPlaced ? "Cannot Apply" : 
-                (selectedJob.applied ? "Applied" : "Apply Now")) 
-              }}
+              {{ selectedJob.applied ? "Applied" : "Apply Now" }}
             </button>
           </div>
         </div>
       </div>
     </transition>
 
-    <!-- PLACEMENT MODAL -->
-    <transition name="fade">
-      <div v-if="showPlacementModal" class="custom-modal-backdrop" @click.self="showPlacementModal = false">
-        <div class="premium-modal-content premium-table-card" style="max-width: 500px;">
-          <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-light">
-            <h4 class="fw-bold m-0 text-success">Congratulations!</h4>
-            <button class="btn btn-icon btn-outline-secondary rounded-circle" @click="showPlacementModal = false">
-              <X size="20" />
-            </button>
-          </div>
-          
-          <div class="modal-body-content">
-            <p class="mb-4">Which company/job did you get placed in? Once confirmed, your other applications will be removed, and you won't be able to apply for new jobs.</p>
-            
-            <label class="form-label text-muted small fw-semibold mb-2">Select Your New Job</label>
-            <select class="form-select premium-input mb-4" v-model="placedJobId">
-              <option value="" disabled>-- Choose a Job --</option>
-              <option v-for="job in appliedJobs" :key="job.jobId" :value="job.jobId">
-                {{ job.title }} at {{ job.companyName }}
-              </option>
-            </select>
-
-            <div v-if="appliedJobs.length === 0" class="alert alert-warning mb-4 small py-2">
-              You haven't applied to any jobs yet! You can only mark yourself as placed in a job you have applied for.
-            </div>
-
-            <div v-if="placementError" class="alert alert-danger mb-0 small py-2">{{ placementError }}</div>
-          </div>
-
-          <div class="mt-4 pt-3 border-top border-light d-flex gap-3 justify-content-end">
-            <button class="btn btn-outline-secondary px-4 custom-btn" @click="showPlacementModal = false" :disabled="isPlacing">
-              Cancel
-            </button>
-            <button class="btn btn-success px-5 custom-btn fw-bold" @click="confirmPlacement" :disabled="!placedJobId || isPlacing">
-              <span v-if="isPlacing" class="spinner-border spinner-border-sm me-2"></span>
-              Confirm Placement
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- CONGRATULATIONS SUCCESS MODAL -->
-    <transition name="fade">
-      <div v-if="showCongratsModal" class="custom-modal-backdrop" @click.self="closeCongratsModal">
-        <div class="premium-modal-content premium-table-card text-center py-5" style="max-width: 450px;">
-          <div class="mb-4">
-            <div class="success-icon-container mx-auto mb-3">
-              <Briefcase size="48" class="text-success" />
-            </div>
-            <h3 class="fw-bold text-success mb-2">Congratulations!</h3>
-            <p class="text-muted">You have been successfully marked as placed. Your other applications have been removed, and you can no longer apply for new jobs.</p>
-          </div>
-          <button class="btn btn-success px-5 py-2 fw-bold custom-btn" @click="closeCongratsModal">
-            Continue to Dashboard
-          </button>
-        </div>
-      </div>
-    </transition>
+    <!-- Placement Modals Removed -->
 
   </div>
 </template>
@@ -300,13 +229,6 @@ const jobs = ref([])
 const selectedJob = ref(null)
 const showFilters = ref(false)
 
-/* PLACEMENT */
-const showPlacementModal = ref(false)
-const showCongratsModal = ref(false)
-const placedJobId = ref("")
-const isPlacing = ref(false)
-const placementError = ref("")
-
 /* FILTERS */
 const filters = ref({
   title: "",
@@ -316,11 +238,6 @@ const filters = ref({
 
 onMounted(async () => {
   jobs.value = await getJobs()
-})
-
-/* COMPUTED IS PLACED */
-const isUserPlaced = computed(() => {
-  return jobs.value.some(job => job.applicationStatus === 'Placed')
 })
 
 /* COMPUTED APPLIED JOBS */
@@ -362,41 +279,6 @@ async function apply(job) {
        selectedJob.value.applied = true
     }
   }
-}
-
-/* PLACEMENT LOGIC */
-async function confirmPlacement() {
-  if (!placedJobId.value) return
-  
-  isPlacing.value = true
-  placementError.value = ""
-
-  try {
-    const res = await fetch("https://localhost:7269/api/applications/mark-placed", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ JobId: placedJobId.value })
-    })
-
-    if (res.ok) {
-      showPlacementModal.value = false
-      showCongratsModal.value = true
-      // Refresh jobs list to sync the UI correctly
-      jobs.value = await getJobs()
-    } else {
-      const data = await res.json()
-      placementError.value = data.message || "Failed to confirm placement."
-    }
-  } catch (err) {
-    placementError.value = "Network error while marking placement."
-  } finally {
-    isPlacing.value = false
-  }
-}
-
-function closeCongratsModal() {
-  showCongratsModal.value = false
 }
 
 function formatDate(dateStr) {

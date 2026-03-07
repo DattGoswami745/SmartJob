@@ -38,7 +38,6 @@ import {
   ClipboardList,
   Users,
   FileBarChart,
-  Settings,
   LogOut
 } from "lucide-vue-next"
 
@@ -52,27 +51,11 @@ const menu = [
   { name: "Reports", path: "/central/reports", icon: FileBarChart },
 ]
 
-const isDark = ref(false)
-
 /* Default Light Theme */
 onMounted(() => {
   document.body.classList.remove("theme-dark")
   document.body.classList.add("theme-light")
-  isDark.value = false
 })
-
-/* Theme Toggle */
-const toggleTheme = () => {
-  if (document.body.classList.contains("theme-light")) {
-    document.body.classList.remove("theme-light")
-    document.body.classList.add("theme-dark")
-    isDark.value = true
-  } else {
-    document.body.classList.remove("theme-dark")
-    document.body.classList.add("theme-light")
-    isDark.value = false
-  }
-}
 
 /* Logout */
 function logout() {

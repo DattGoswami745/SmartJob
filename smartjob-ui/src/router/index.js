@@ -3,7 +3,8 @@ import { createRouter, createWebHistory } from "vue-router"
 /* Layouts */
 import AuthLayout from "@/layouts/AuthLayout.vue"
 import DashboardLayout from "@/layouts/DashboardLayout.vue"
-import CentralLayout from "@/layouts/CentralLayout.vue"   // ✅ NEW
+import CentralLayout from "@/layouts/CentralLayout.vue"
+import CompanyLayout from "@/layouts/CompanyLayout.vue"
 
 /* Auth Pages */
 import Login from "@/views/Login.vue"
@@ -23,6 +24,10 @@ import CentralJobs from "@/views/central/Jobs.vue"
 import CentralApplications from "@/views/central/Applications.vue"
 import CentralUsers from "@/views/central/Users.vue"
 import CentralReports from "@/views/central/Reports.vue"
+
+/* Company Recruiter Pages */
+import CompanyDashboard from "@/views/company/Dashboard.vue"
+import SetupCompany from "@/views/company/SetupCompany.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -70,6 +75,16 @@ const routes = [
       { path: "users", component: CentralUsers },
       { path: "reports", component: CentralReports }
     ]
+  },
+
+  /* COMPANY RECRUITER ROUTES */
+  {
+    path: "/company",
+    component: CompanyLayout,
+    children: [
+      { path: "dashboard", component: CompanyDashboard },
+      { path: "setup", component: SetupCompany }
+    ]
   }
 ]
 
@@ -86,9 +101,10 @@ router.beforeEach(async (to, from, next) => {
   const isAuthPage = to.path === "/login" || to.path === "/signup"
   const isUserPage = to.path.startsWith("/app")
   const isCentralPage = to.path.startsWith("/central")
+  const isCompanyPage = to.path.startsWith("/company")
 
   // 🚫 Not logged in → block protected routes
-  if ((isUserPage || isCentralPage) && !isLoggedIn) {
+  if ((isUserPage || isCentralPage || isCompanyPage) && !isLoggedIn) {
     return next("/login")
   }
 
@@ -96,6 +112,8 @@ router.beforeEach(async (to, from, next) => {
   if (isAuthPage && isLoggedIn) {
     if (role === "Central")
       return next("/central/dashboard")
+    else if (role === "Company")
+      return next("/company/dashboard")
     else
       return next("/app")
   }
@@ -109,8 +127,12 @@ router.beforeEach(async (to, from, next) => {
     return next("/app")
   }
 
+  if (isCompanyPage && role !== "Company") {
+    return next("/app")
+  }
+
   // 🔐 Backend session verification
-  if (isUserPage || isCentralPage) {
+  if (isUserPage || isCentralPage || isCompanyPage) {
     try {
       const res = await fetch(`${BASE}/auth/check-session`, {
         credentials: "include"
@@ -120,6 +142,19 @@ router.beforeEach(async (to, from, next) => {
         localStorage.clear()
         return next("/login")
       }
+
+      const userData = await res.json()
+
+      // 🚩 Company Onboarding Guard
+      if (role === "Company" && !userData.companyId && to.path !== "/company/setup") {
+        return next("/company/setup")
+      }
+
+      // Prevent setup page if already joined
+      if (role === "Company" && userData.companyId && to.path === "/company/setup") {
+        return next("/company/dashboard")
+      }
+
     } catch (error) {
       localStorage.clear()
       return next("/login")

@@ -241,6 +241,35 @@ export async function getCentralDashboardData() {
   return await res.json()
 }
 
+/* ===================== COMPANY DASHBOARD ===================== */
+export async function getCompanyDashboardData() {
+  const res = await fetch(`${BASE}/company/dashboard`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getSetupCompanies() {
+  const res = await fetch(`${BASE}/company/setup/list`, {
+    credentials: "include"
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function setupCompany(data) {
+  const res = await fetch(`${BASE}/company/setup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
 /* ===================== CENTRAL USERS ===================== */
 export async function getAllUsers() {
   const res = await fetch(`${BASE}/central/users`, {

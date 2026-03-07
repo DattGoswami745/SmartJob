@@ -8,6 +8,26 @@
       <p class="text-muted small">Join SmartJob to unlock your career potential</p>
     </div>
 
+    <!-- Role Selection Tabs -->
+    <div class="role-tabs-container mb-4">
+      <div 
+        class="role-tab" 
+        :class="{ active: selectedRole === 'User' }"
+        @click="selectedRole = 'User'"
+      >
+        <UserIcon size="18" />
+        <span>Candidate</span>
+      </div>
+      <div 
+        class="role-tab" 
+        :class="{ active: selectedRole === 'Company' }"
+        @click="selectedRole = 'Company'"
+      >
+        <Briefcase size="18" />
+        <span>Company</span>
+      </div>
+    </div>
+
     <form @submit.prevent="handleSignup" class="mt-4">
       <!-- Name -->
       <div class="mb-4 position-relative">
@@ -93,7 +113,7 @@
 
       <button type="submit" class="btn btn-primary-gradient w-100 py-3 mt-4 mb-4" :disabled="isLoading">
         <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-        {{ isLoading ? 'Creating Account...' : 'Sign Up' }} 
+        {{ isLoading ? 'Creating Account...' : (selectedRole === 'Company' ? 'Register Company' : 'Sign Up') }} 
         <ArrowRight v-if="!isLoading" class="ms-2" size="18" />
       </button>
 
@@ -160,7 +180,7 @@
 import { ref, onMounted, onUnmounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { signupUser, verifyEmail, resendOTP } from "../services/api"
-import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Clock } from "lucide-vue-next"
+import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Clock, Briefcase } from "lucide-vue-next"
 
 onMounted(() => {
   document.body.classList.remove("theme-dark")
@@ -174,6 +194,7 @@ const name = ref("")
 const email = ref("")
 const password = ref("")
 const confirmPassword = ref("")
+const selectedRole = ref("User")
 
 const showPassword = ref(false)
 const showConfirm = ref(false)
@@ -257,7 +278,8 @@ async function handleSignup() {
     await signupUser({
       fullName: name.value,
       email: email.value,
-      password: password.value
+      password: password.value,
+      role: selectedRole.value
     })
 
     // Show OTP Verify Modal
@@ -306,7 +328,6 @@ async function handleResendOtp() {
 </script>
 
 <style scoped>
-<style scoped>
 .signup-wrapper {
   animation: fadeIn 0.4s ease-in-out;
 }
@@ -314,6 +335,52 @@ async function handleResendOtp() {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Role Tabs Styling */
+.role-tabs-container {
+  display: flex;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 14px;
+  gap: 6px;
+  position: relative;
+  border: 1px solid #e2e8f0;
+}
+
+.role-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+}
+
+.role-tab.active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.role-tab:not(.active):hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: #475569;
+}
+
+.role-tab svg {
+  transition: transform 0.3s;
+}
+
+.role-tab.active svg {
+  transform: scale(1.1);
 }
 
 .gradient-text {

@@ -20,12 +20,7 @@
     </div>
 
     <!-- BOTTOM ICONS -->
-    <div class="d-flex justify-content-between px-2">
-      <!-- THEME TOGGLE -->
-      <button class="icon-btn" @click="toggleTheme" title="Theme">
-        <Settings size="20" />
-      </button>
-
+    <div class="d-flex justify-content-end px-2 pt-3 border-top">
       <!-- LOGOUT -->
       <button class="icon-btn logout" title="Logout" @click="logout">
         <LogOut size="20" />
