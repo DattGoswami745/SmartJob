@@ -23,12 +23,21 @@ namespace SmartJobSystem.Server.Data
         /* ===================== JOBS ===================== */
 
         // 🔹 Get all active jobs
-        public async Task<List<Job>> GetJobsAsync()
+        // 🔹 Get jobs by status (Pending, Approved, Rejected)
+        public async Task<List<Job>> GetJobsAsync(string status = "All")
         {
             var jobs = new List<Job>();
+            string filter = "WHERE 1=1";
+
+            if (status == "Pending")
+                filter = "WHERE j.IsApproved = 0 AND j.IsActive = 1";
+            else if (status == "Approved")
+                filter = "WHERE j.IsApproved = 1 AND j.IsActive = 1";
+            else if (status == "Rejected")
+                filter = "WHERE j.IsActive = 0";
 
             using var con = GetConnection();
-            using var cmd = new SqlCommand(@"
+            using var cmd = new SqlCommand($@"
         SELECT 
             j.JobId,
             j.CompanyId,
@@ -40,10 +49,11 @@ namespace SmartJobSystem.Server.Data
             j.PostedDate,
             j.LastDate,
             j.IsActive,
+            j.IsApproved,
             c.CompanyName
         FROM Jobs j
         LEFT JOIN Companies c ON j.CompanyId = c.CompanyId
-        WHERE j.IsActive = 1
+        {filter}
         ORDER BY j.PostedDate DESC
     ", con);
 
@@ -64,11 +74,95 @@ namespace SmartJobSystem.Server.Data
                     PostedDate = reader.GetDateTime(7),
                     LastDate = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
                     IsActive = reader.GetBoolean(9),
-                    CompanyName = reader.IsDBNull(10) ? null : reader.GetString(10)
+                    IsApproved = reader.GetBoolean(10),
+                    CompanyName = reader.IsDBNull(11) ? null : reader.GetString(11)
                 });
             }
 
             return jobs;
+        }
+
+        // 🔹 Get jobs by company
+        public async Task<List<Job>> GetJobsByCompanyAsync(int companyId)
+        {
+            var jobs = new List<Job>();
+
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                SELECT 
+                    JobId,
+                    CompanyId,
+                    Title,
+                    Description,
+                    RequiredSkills,
+                    JobType,
+                    SalaryRange,
+                    PostedDate,
+                    LastDate,
+                    IsActive,
+                    IsApproved
+                FROM Jobs
+                WHERE CompanyId = @CompanyId AND IsActive = 1
+                ORDER BY PostedDate DESC
+            ", con);
+
+            cmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId;
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                jobs.Add(new Job
+                {
+                    JobId = reader.GetInt32(0),
+                    CompanyId = reader.GetInt32(1),
+                    Title = reader.GetString(2),
+                    Description = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    RequiredSkills = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    JobType = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    SalaryRange = reader.IsDBNull(6) ? "" : reader.GetString(6),
+                    PostedDate = reader.GetDateTime(7),
+                    LastDate = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
+                    IsActive = reader.GetBoolean(9),
+                    IsApproved = reader.GetBoolean(10)
+                });
+            }
+
+            return jobs;
+        }
+
+        // 🔹 Approve a job
+        public async Task<bool> ApproveJobAsync(int jobId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("UPDATE Jobs SET IsApproved = 1 WHERE JobId = @JobId", con);
+            cmd.Parameters.Add("@JobId", SqlDbType.Int).Value = jobId;
+
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
+        // 🔹 Reject (Soft Delete) a job
+        public async Task<bool> RejectJobAsync(int jobId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("UPDATE Jobs SET IsActive = 0 WHERE JobId = @JobId", con);
+            cmd.Parameters.Add("@JobId", SqlDbType.Int).Value = jobId;
+
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
+        // 🔹 Restore a rejected job
+        public async Task<bool> RestoreJobAsync(int jobId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("UPDATE Jobs SET IsActive = 1 WHERE JobId = @JobId", con);
+            cmd.Parameters.Add("@JobId", SqlDbType.Int).Value = jobId;
+
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
         // 🔹 Count active jobs
@@ -186,6 +280,75 @@ namespace SmartJobSystem.Server.Data
                 con
             );
             cmd.Parameters.Add("@ApplicationId", SqlDbType.Int).Value = applicationId;
+
+            await con.OpenAsync();
+            var rowsAffected = await cmd.ExecuteNonQueryAsync();
+
+            return rowsAffected > 0;
+        }
+
+        // 🔹 Get Applications for a specific Company
+        public async Task<List<object>> GetApplicationsByCompanyAsync(int companyId)
+        {
+            var applications = new List<object>();
+
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                SELECT 
+                    a.ApplicationId,
+                    a.AppliedDate,
+                    u.UserId,
+                    u.FullName,
+                    u.Email,
+                    j.Title AS JobTitle,
+                    j.JobId,
+                    j.JobType,
+                    c.CompanyName
+                FROM Applications a
+                JOIN Users u ON a.UserId = u.UserId
+                JOIN Jobs j ON a.JobId = j.JobId
+                JOIN Companies c ON j.CompanyId = c.CompanyId
+                WHERE j.CompanyId = @CompanyId
+                ORDER BY a.AppliedDate DESC
+            ", con);
+
+            cmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId;
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                applications.Add(new
+                {
+                    ApplicationId = reader.GetInt32(0),
+                    AppliedDate = reader.GetDateTime(1),
+                    UserId = reader.GetInt32(2),
+                    FullName = reader.GetString(3),
+                    Email = reader.GetString(4),
+                    JobTitle = reader.GetString(5),
+                    JobId = reader.GetInt32(6),
+                    JobType = reader.IsDBNull(7) ? "" : reader.GetString(7),
+                    CompanyName = reader.IsDBNull(8) ? "" : reader.GetString(8)
+                });
+            }
+
+            return applications;
+        }
+
+        // 🔹 Delete Application for a specific Company (Security Check)
+        public async Task<bool> DeleteCompanyApplicationAsync(int companyId, int applicationId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                DELETE a 
+                FROM Applications a
+                JOIN Jobs j ON a.JobId = j.JobId
+                WHERE a.ApplicationId = @ApplicationId AND j.CompanyId = @CompanyId
+            ", con);
+
+            cmd.Parameters.Add("@ApplicationId", SqlDbType.Int).Value = applicationId;
+            cmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId;
 
             await con.OpenAsync();
             var rowsAffected = await cmd.ExecuteNonQueryAsync();
@@ -433,9 +596,9 @@ namespace SmartJobSystem.Server.Data
             using var con = GetConnection();
             using var cmd = new SqlCommand(@"
                 INSERT INTO Jobs 
-                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, LastDate, IsActive)
+                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, LastDate, IsActive, IsApproved)
                 VALUES
-                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @LastDate, @IsActive);
+                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @LastDate, @IsActive, @IsApproved);
                 SELECT SCOPE_IDENTITY();
             ", con);
 
@@ -448,6 +611,7 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@PostedDate", SqlDbType.DateTime2).Value = DateTime.UtcNow;
             cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
             cmd.Parameters.Add("@IsActive", SqlDbType.Bit).Value = true;
+            cmd.Parameters.Add("@IsApproved", SqlDbType.Bit).Value = job.IsApproved;
 
             await con.OpenAsync();
             var result = await cmd.ExecuteScalarAsync();
@@ -468,7 +632,8 @@ namespace SmartJobSystem.Server.Data
                     RequiredSkills = @RequiredSkills,
                     JobType = @JobType,
                     SalaryRange = @SalaryRange,
-                    LastDate = @LastDate
+                    LastDate = @LastDate,
+                    IsApproved = @IsApproved
                 WHERE JobId = @JobId AND IsActive = 1
             ", con);
 
@@ -480,6 +645,7 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@JobType", SqlDbType.NVarChar, 100).Value = job.JobType ?? "";
             cmd.Parameters.Add("@SalaryRange", SqlDbType.NVarChar, 100).Value = job.SalaryRange ?? "";
             cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
+            cmd.Parameters.Add("@IsApproved", SqlDbType.Bit).Value = job.IsApproved;
 
             await con.OpenAsync();
             int rowsAffected = await cmd.ExecuteNonQueryAsync();

@@ -54,8 +54,8 @@ const router = useRouter();
 
 const menu = [
   { name: "Dashboard", path: "/company/dashboard", icon: LayoutDashboard },
-  { name: "Posted Jobs", path: "/central/jobs", icon: Briefcase }, // Reusing Central Jobs for now
-  { name: "Applications", path: "/central/applications", icon: ClipboardList }, // Reusing Central Apps for now
+  { name: "Posted Jobs", path: "/company/jobs", icon: Briefcase },
+  { name: "Applications", path: "/company/applications", icon: ClipboardList },
   { name: "Reports", path: "/central/reports", icon: FileBarChart }, // Reusing Central Reports for now
 ];
 

@@ -4,6 +4,7 @@ import router from "./router"
 
 // Bootstrap
 import "bootstrap/dist/css/bootstrap.min.css"
+import "bootstrap-icons/font/bootstrap-icons.css"
 import "bootstrap"
 
 // Global CSS
@@ -25,5 +26,5 @@ document.body.classList.add(savedTheme)
    =============================== */
 
 createApp(App)
-  .use(router)
-  .mount("#app")
+   .use(router)
+   .mount("#app")

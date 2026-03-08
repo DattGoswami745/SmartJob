@@ -270,6 +270,79 @@ export async function setupCompany(data) {
   return await res.json()
 }
 
+/* ===================== COMPANY JOBS ===================== */
+
+export async function getCompanyJobs() {
+  const res = await fetch(`${BASE}/company/jobs`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function addCompanyJob(job) {
+  const res = await fetch(`${BASE}/company/jobs/add`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(job)
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function updateCompanyJob(jobId, job) {
+  const res = await fetch(`${BASE}/company/jobs/update/${jobId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(job)
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+/* ===================== COMPANY APPLICATIONS ===================== */
+
+export async function getCompanyApplications() {
+  const res = await fetch(`${BASE}/company/applications`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function deleteCompanyApplication(appId) {
+  const res = await fetch(`${BASE}/company/applications/${appId}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getUserProfileForCompany(userId) {
+  const res = await fetch(`${BASE}/company/applications/profile/${userId}`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) {
+    if (res.status === 404) return null
+    throw new Error(await res.text())
+  }
+  return await res.json()
+}
+
+export async function downloadCompanyApplicationsReport(search = "", jobId = "") {
+  const query = new URLSearchParams({ search, jobId }).toString()
+  window.open(`${BASE}/company/applications/report?${query}`, "_blank")
+}
+
 /* ===================== CENTRAL USERS ===================== */
 export async function getAllUsers() {
   const res = await fetch(`${BASE}/central/users`, {
@@ -367,8 +440,9 @@ export async function downloadJobReport(jobId) {
 
 /* ===================== CENTRAL JOBS ===================== */
 
-export async function getCentralJobs() {
-  const res = await fetch(`${BASE}/central/jobs`, {
+export async function getCentralJobs(status = "All") {
+  const res = await fetch(`${BASE}/central/jobs?status=${status}`, {
+    method: "GET",
     credentials: "include"
   })
 
@@ -394,6 +468,36 @@ export async function updateJob(jobId, job) {
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(job)
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function approveJob(jobId) {
+  const res = await fetch(`${BASE}/central/jobs/approve/${jobId}`, {
+    method: "POST",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function rejectJob(jobId) {
+  const res = await fetch(`${BASE}/central/jobs/reject/${jobId}`, {
+    method: "POST",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function restoreJob(jobId) {
+  const res = await fetch(`${BASE}/central/jobs/restore/${jobId}`, {
+    method: "POST",
+    credentials: "include"
   })
 
   if (!res.ok) throw new Error(await res.text())

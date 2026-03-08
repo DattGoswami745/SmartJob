@@ -197,9 +197,11 @@
 <script>
 import { ref, onMounted, computed } from "vue"
 import { getCentralUsers, deleteCentralUser, getUserProfileForAdmin, getUserActivityLogs } from "@/services/api"
+import { useNotification } from "@/composables/useNotification"
 
 export default {
   setup() {
+    const { notify } = useNotification()
     const users = ref([])
     const searchUser = ref("")
     const loading = ref(false)
@@ -222,7 +224,7 @@ export default {
         loading.value = true
         users.value = await getCentralUsers()
       } catch (err) {
-        alert("Error loading users: " + err.message)
+        notify("Error loading users: " + err.message, "error")
       } finally {
         loading.value = false
       }
@@ -248,7 +250,7 @@ export default {
         users.value = users.value.filter(u => u.userId !== userToDelete.value)
         closeDeleteModal()
       } catch (err) {
-        alert("Error deleting user: " + err.message)
+        notify("Error deleting user: " + err.message, "error")
       } finally {
         loading.value = false
       }

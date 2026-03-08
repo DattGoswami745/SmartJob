@@ -1,329 +1,247 @@
 <template>
   <div class="jobs-page">
 
-    <!-- HEADER -->
-    <div class="page-header">
-      <div class="header-left">
-        <h2>Central Jobs</h2>
+    <!-- HEADER & FILTERS -->
+    <div class="page-header-container">
+      <div class="page-header">
+        <div class="header-left">
+          <h2>Central Jobs</h2>
+        </div>
       </div>
-      <div class="header-right">
-        <button class="primary-btn add-job-btn" @click="toggleAddJob" v-if="!showUpdateJob">
-          <i class="bi bi-plus-circle-fill me-2"></i>
-          {{ showAddJob ? "Cancel Add" : "Add New Job" }}
-        </button>
-        <button class="secondary-btn add-job-btn" @click="cancelUpdate" v-else>
-          <i class="bi bi-x-circle-fill me-2"></i> Cancel Update
-        </button>
-      </div>
-    </div>
 
-    <!-- ADD JOB SECTION -->
-    <div v-if="showAddJob" class="card-section">
-      <h3 class="section-title">Add Job</h3>
-
-      <div class="form-grid">
-
-        <!-- Company -->
-        <div class="form-group">
-          <label>Company <span class="required">*</span></label>
-          <div class="company-row">
-            <select v-model.number="newJob.companyId" :class="{ 'is-invalid': errors.companyId }">
-              <option :value="null">Select Company</option>
-              <option
-                v-for="c in companies"
-                :key="c.companyId"
-                :value="c.companyId"
-              >
-                {{ c.companyName }}
-              </option>
-            </select>
-
-            <button class="secondary-btn" @click="toggleAddCompany">
-              {{ showAddCompany ? "Cancel" : "Add Company" }}
-            </button>
-          </div>
-          <span class="error-msg" v-if="errors.companyId">{{ errors.companyId }}</span>
+      <div class="filters-bar">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by title..." 
+            class="filter-input"
+          />
         </div>
 
-        <!-- Add Company -->
-        <div v-if="showAddCompany" class="nested-form">
-          <div class="nested-grid">
-            <input v-model="newCompany.companyName" placeholder="Company Name" />
-            <input v-model="newCompany.industry" placeholder="Industry" />
-            <input v-model="newCompany.location" placeholder="Location" />
-            <button class="primary-btn" @click="createCompany">
-              Save Company
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Title <span class="required">*</span></label>
-          <input v-model="newJob.title" placeholder="e.g. Senior Backend Engineer" :class="{ 'is-invalid': errors.title }" />
-          <span class="error-msg" v-if="errors.title">{{ errors.title }}</span>
-        </div>
-
-        <div class="form-group full-width">
-          <label>Description <span class="required">*</span></label>
-          <textarea v-model="newJob.description" placeholder="Detailed job description..." :class="{ 'is-invalid': errors.description }"></textarea>
-          <span class="error-msg" v-if="errors.description">{{ errors.description }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>Required Skills <span class="required">*</span></label>
-          <input v-model="newJob.requiredSkills" placeholder="e.g. Java, Vue.js, SQL" :class="{ 'is-invalid': errors.requiredSkills }"/>
-          <span class="error-msg" v-if="errors.requiredSkills">{{ errors.requiredSkills }}</span>
-        </div>
-
-        <!-- 🔥 Job Type Dropdown -->
-        <div class="form-group">
-          <label>Job Type <span class="required">*</span></label>
-          <select v-model="newJob.jobType" :class="{ 'is-invalid': errors.jobType }">
-            <option value="">Select Job Type</option>
-            <option>Full-Time</option>
-            <option>Part-Time</option>
-            <option>Contract</option>
-            <option>Hybrid</option>
-            <option>Remote</option>
+        <div class="filter-group">
+          <i class="bi bi-building"></i>
+          <select v-model="selectedCompany" class="filter-select">
+            <option value="">All Companies</option>
+            <option v-for="c in companies" :key="c.companyId" :value="c.companyId">
+              {{ c.companyName }}
+            </option>
           </select>
-          <span class="error-msg" v-if="errors.jobType">{{ errors.jobType }}</span>
         </div>
 
-        <div class="form-group">
-          <label>Salary Range <span class="required">*</span></label>
-          <div class="salary-input-wrapper">
-            <input v-model="newJob.salaryRange" placeholder="e.g. 5-8" :class="{ 'is-invalid': errors.salaryRange }" @blur="formatSalary" />
-            <span class="currency-badge">LPA</span>
-          </div>
-          <span class="error-msg" v-if="errors.salaryRange">{{ errors.salaryRange }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>Last Date to Apply</label>
-          <input type="date" v-model="newJob.lastDate" />
-        </div>
-
-      </div>
-
-      <div class="form-footer">
-        <button class="secondary-btn" @click="toggleAddJob" style="margin-right: 15px;">
-          Cancel
-        </button>
-        <button class="primary-btn submit-btn" @click="createJob" :disabled="loading">
-          <i class="bi bi-check2-circle me-2" v-if="!loading"></i>
-          <span class="spinner-border spinner-border-sm me-2" v-if="loading"></span>
-          {{ loading ? "Saving Job..." : "Save Job Entry" }}
-        </button>
-      </div>
-    </div>
-
-    <!-- UPDATE JOB SECTION -->
-    <div v-if="showUpdateJob" class="card-section update-section">
-      <h3 class="section-title">Update Job</h3>
-
-      <div class="form-grid">
-
-        <!-- Company -->
-        <div class="form-group">
-          <label>Company <span class="required">*</span></label>
-          <div class="company-row">
-            <select v-model.number="editingJob.companyId" :class="{ 'is-invalid': updateErrors.companyId }">
-              <option :value="null">Select Company</option>
-              <option v-for="c in companies" :key="c.companyId" :value="c.companyId">
-                {{ c.companyName }}
-              </option>
-            </select>
-          </div>
-          <span class="error-msg" v-if="updateErrors.companyId">{{ updateErrors.companyId }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>Title <span class="required">*</span></label>
-          <input v-model="editingJob.title" placeholder="e.g. Senior Backend Engineer" :class="{ 'is-invalid': updateErrors.title }" />
-          <span class="error-msg" v-if="updateErrors.title">{{ updateErrors.title }}</span>
-        </div>
-
-        <div class="form-group full-width">
-          <label>Description <span class="required">*</span></label>
-          <textarea v-model="editingJob.description" placeholder="Detailed job description..." :class="{ 'is-invalid': updateErrors.description }"></textarea>
-          <span class="error-msg" v-if="updateErrors.description">{{ updateErrors.description }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>Required Skills <span class="required">*</span></label>
-          <input v-model="editingJob.requiredSkills" placeholder="e.g. Java, Vue.js, SQL" :class="{ 'is-invalid': updateErrors.requiredSkills }"/>
-          <span class="error-msg" v-if="updateErrors.requiredSkills">{{ updateErrors.requiredSkills }}</span>
-        </div>
-
-        <!-- 🔥 Job Type Dropdown -->
-        <div class="form-group">
-          <label>Job Type <span class="required">*</span></label>
-          <select v-model="editingJob.jobType" :class="{ 'is-invalid': updateErrors.jobType }">
-            <option value="">Select Job Type</option>
-            <option>Full-Time</option>
-            <option>Part-Time</option>
-            <option>Contract</option>
-            <option>Hybrid</option>
-            <option>Remote</option>
+        <div class="filter-group">
+          <i class="bi bi-briefcase"></i>
+          <select v-model="selectedJobType" class="filter-select">
+            <option value="">All Types</option>
+            <option v-for="type in ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote']" :key="type" :value="type">
+              {{ type }}
+            </option>
           </select>
-          <span class="error-msg" v-if="updateErrors.jobType">{{ updateErrors.jobType }}</span>
         </div>
 
-        <div class="form-group">
-          <label>Salary Range <span class="required">*</span></label>
-          <div class="salary-input-wrapper">
-            <input v-model="editingJob.salaryRange" placeholder="e.g. 5-8" :class="{ 'is-invalid': updateErrors.salaryRange }" @blur="formatUpdateSalary" />
-            <span class="currency-badge">LPA</span>
-          </div>
-          <span class="error-msg" v-if="updateErrors.salaryRange">{{ updateErrors.salaryRange }}</span>
-        </div>
-
-        <div class="form-group">
-          <label>Last Date to Apply</label>
-          <input type="date" v-model="editingJob.lastDate" />
-        </div>
-
-      </div>
-
-      <div class="form-footer">
-        <button class="secondary-btn" @click="cancelUpdate" style="margin-right: 15px;">
-          Cancel
-        </button>
-        <button class="primary-btn submit-btn" @click="saveUpdateJob" :disabled="loading">
-          <i class="bi bi-pencil-square me-2" v-if="!loading"></i>
-          <span class="spinner-border spinner-border-sm me-2" v-if="loading"></span>
-          {{ loading ? "Updating..." : "Update Job" }}
+        <button class="reset-btn" @click="resetFilters" title="Reset Filters">
+          <i class="bi bi-arrow-counterclockwise"></i>
         </button>
       </div>
     </div>
 
-    <!-- JOB TABLE -->
-    <div class="card-section">
+    <!-- SECTIONS -->
+    <div v-if="loading && jobs.length === 0" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-2 text-muted">Loading all jobs...</p>
+    </div>
 
-      <h3 class="section-title">Job Listings</h3>
+    <div v-else class="sections-container">
+      
+      <!-- PENDING SECTION -->
+      <section class="job-section">
+        <h3 class="section-title pending-title">
+          <i class="bi bi-clock-history"></i> Pending Approvals 
+          <span class="count-badge">{{ pendingJobs.length }}</span>
+        </h3>
+        <div v-if="pendingJobs.length > 0" class="jobs-grid">
+          <div v-for="job in pendingJobs" :key="job.jobId" class="job-card pending-border">
+            <div class="card-header-top">
+              <span class="company-badge">{{ companies.find(c => c.companyId === job.companyId)?.companyName || 'Company' }}</span>
+              <span class="status-badge pending">Pending</span>
+            </div>
+            <h3 class="job-title">{{ job.title }}</h3>
+            <div class="job-meta">
+              <div class="meta-item"><i class="bi bi-briefcase"></i> {{ job.jobType }}</div>
+              <div class="meta-item"><i class="bi bi-cash-stack"></i> {{ job.salaryRange }}</div>
+              <div class="meta-item"><i class="bi bi-calendar3"></i> {{ job.postedDate ? job.postedDate.split('T')[0] : 'N/A' }}</div>
+            </div>
+            <div class="card-footer">
+              <button class="detail-btn" @click="showDetails(job)">Details</button>
+              <button class="approve-card-btn" @click="handleApprove(job.jobId)">Approve</button>
+              <button class="reject-card-btn" @click="handleReject(job.jobId)">Reject</button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="no-data-inline">No pending requests found.</div>
+      </section>
 
-      <div class="table-wrapper">
-        <table class="job-table">
+      <!-- APPROVED SECTION -->
+      <section class="job-section">
+        <h3 class="section-title approved-title collapsible-header" @click="toggleApproved">
+          <div class="title-left">
+            <i class="bi bi-check-circle"></i> Approved Jobs
+            <span class="count-badge">{{ approvedJobs.length }}</span>
+          </div>
+          <i :class="['bi', isApprovedCollapsed ? 'bi-chevron-down' : 'bi-chevron-up', 'collapse-arrow']"></i>
+        </h3>
+        <div v-show="!isApprovedCollapsed">
+          <div v-if="approvedJobs.length > 0" class="jobs-grid">
+            <div v-for="job in approvedJobs" :key="job.jobId" class="job-card approved-border">
+              <div class="card-header-top">
+                <span class="company-badge">{{ companies.find(c => c.companyId === job.companyId)?.companyName || 'Company' }}</span>
+                <span class="status-badge approved">Approved</span>
+              </div>
+              <h3 class="job-title">{{ job.title }}</h3>
+              <div class="job-meta">
+                <div class="meta-item"><i class="bi bi-briefcase"></i> {{ job.jobType }}</div>
+                <div class="meta-item"><i class="bi bi-calendar3"></i> {{ job.postedDate ? job.postedDate.split('T')[0] : 'N/A' }}</div>
+              </div>
+              <div class="card-footer">
+                <button class="detail-btn" @click="showDetails(job)">Details</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="no-data-inline">No approved jobs found.</div>
+        </div>
+      </section>
 
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Company</th>
-              <th>Type</th>
-              <th>Salary</th>
-              <th>Last Date</th>
-              <th>Skills</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+      <!-- REJECTED SECTION -->
+      <section class="job-section">
+        <h3 class="section-title rejected-title collapsible-header" @click="toggleRejected">
+          <div class="title-left">
+            <i class="bi bi-x-circle"></i> Rejected Jobs
+            <span class="count-badge">{{ rejectedJobs.length }}</span>
+          </div>
+          <i :class="['bi', isRejectedCollapsed ? 'bi-chevron-down' : 'bi-chevron-up', 'collapse-arrow']"></i>
+        </h3>
+        <div v-show="!isRejectedCollapsed">
+          <div v-if="rejectedJobs.length > 0" class="jobs-grid">
+            <div v-for="job in rejectedJobs" :key="job.jobId" class="job-card rejected-border">
+              <div class="card-header-top">
+                <span class="company-badge">{{ companies.find(c => c.companyId === job.companyId)?.companyName || 'Company' }}</span>
+                <span class="status-badge rejected">Rejected</span>
+              </div>
+              <h3 class="job-title">{{ job.title }}</h3>
+              <div class="job-meta">
+                <div class="meta-item"><i class="bi bi-briefcase"></i> {{ job.jobType }}</div>
+              </div>
+              <div class="card-footer">
+                <button class="detail-btn" @click="showDetails(job)">Details</button>
+                <button class="restore-card-btn" @click="handleRestore(job.jobId)">Restore</button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="no-data-inline">No rejected jobs found.</div>
+        </div>
+      </section>
 
-          <tbody>
-            <tr v-for="job in jobs" :key="job.jobId">
-              <td class="fw">{{ job.title }}</td>
-              <td>
-                {{ companies.find(c => c.companyId === job.companyId)?.companyName || job.companyId }}
-              </td>
-              <td>{{ job.jobType }}</td>
-              <td>{{ job.salaryRange }}</td>
-              <td>{{ job.lastDate ? job.lastDate.split('T')[0] : 'N/A' }}</td>
-              <td>{{ job.requiredSkills }}</td>
-              <td>
-                <button class="action-btn edit-btn" @click="editJob(job)">
-                  <i class="bi bi-pencil-fill"></i> Edit
-                </button>
-              </td>
-            </tr>
+    </div>
 
-            <tr v-if="jobs.length === 0">
-              <td colspan="5" class="no-data">
-                No Jobs Available
-              </td>
-            </tr>
-
-          </tbody>
-
-        </table>
+    <!-- JOB DETAILS MODAL -->
+    <div v-if="selectedJob" class="modal-overlay" @click.self="selectedJob = null">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Job Details</h2>
+          <button class="close-modal-btn" @click="selectedJob = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-group">
+            <label>Title</label>
+            <p class="detail-value">{{ selectedJob.title }}</p>
+          </div>
+          <div class="detail-group">
+            <label>Company</label>
+            <p class="detail-value">{{ companies.find(c => c.companyId === selectedJob.companyId)?.companyName || 'Unknown' }}</p>
+          </div>
+          <div class="detail-row">
+            <div class="detail-group">
+              <label>Type</label>
+              <p class="detail-value">{{ selectedJob.jobType }}</p>
+            </div>
+            <div class="detail-group">
+              <label>Salary</label>
+              <p class="detail-value">{{ selectedJob.salaryRange }}</p>
+            </div>
+          </div>
+          <div class="detail-group">
+            <label>Description</label>
+            <div class="description-text">{{ selectedJob.description }}</div>
+          </div>
+          <div class="detail-group">
+            <label>Required Skills</label>
+            <div class="skills-list">
+              <span v-for="skill in selectedJob.requiredSkills?.split(',')" :key="skill" class="skill-tag">
+                {{ skill.trim() }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-group">
+            <label>Posted On</label>
+            <p class="detail-value">{{ selectedJob.postedDate?.split('T')[0] }}</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button v-if="!selectedJob.isApproved" class="primary-btn" @click="approveFromModal(selectedJob.jobId)">
+            <i class="bi bi-check2-circle me-1"></i> Approve Job
+          </button>
+          <button v-if="!selectedJob.isApproved && selectedJob.isActive" class="danger-btn" @click="rejectFromModal(selectedJob.jobId)">
+            <i class="bi bi-x-circle me-1"></i> Reject Job
+          </button>
+          <button v-if="!selectedJob.isActive" class="primary-btn" @click="restoreFromModal(selectedJob.jobId)">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Restore Job
+          </button>
+        </div>
       </div>
-
     </div>
 
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed, watch } from "vue"
 import {
-  getCentralJobs,
-  addJob,
-  updateJob,
-  getCentralCompanies,
-  addCompany
-} from "@/services/api"
+   getCentralJobs,
+   approveJob,
+   rejectJob,
+   restoreJob,
+   getCentralCompanies
+ } from "@/services/api"
+import { useNotification } from "@/composables/useNotification"
+import { useConfirm } from "@/composables/useConfirm"
 
 export default {
   setup() {
+    const { notify } = useNotification()
+    const { confirm } = useConfirm()
 
     const jobs = ref([])
     const companies = ref([])
     const loading = ref(false)
 
-    const showAddJob = ref(false)
-    const showAddCompany = ref(false)
-
-    const newJob = ref({
-      companyId: null,
-      title: "",
-      description: "",
-      requiredSkills: "",
-      jobType: "",
-      salaryRange: "",
-      lastDate: ""
-    })
-
-    const showUpdateJob = ref(false)
-    const editingJob = ref({})
-    const updateErrors = ref({})
-
-    const errors = ref({})
-
-    const validateJobData = (targetJob, targetErrors) => {
-      targetErrors.value = {}
-      let isValid = true
-
-      if (!targetJob.value.companyId) { targetErrors.value.companyId = "Company is required"; isValid = false }
-      if (!targetJob.value.title?.trim()) { targetErrors.value.title = "Job title is required"; isValid = false }
-      if (!targetJob.value.description?.trim()) { targetErrors.value.description = "Description is required"; isValid = false }
-      if (!targetJob.value.requiredSkills?.trim()) { targetErrors.value.requiredSkills = "Required skills are needed"; isValid = false }
-      if (!targetJob.value.jobType) { targetErrors.value.jobType = "Select a job type"; isValid = false }
-      if (!targetJob.value.salaryRange?.trim()) { targetErrors.value.salaryRange = "Salary range is required"; isValid = false }
-
-      return isValid
-    }
-
-    const validateJob = () => validateJobData(newJob, errors)
-    const validateUpdate = () => validateJobData(editingJob, updateErrors)
-
-    const appendLPA = (targetJob) => {
-      let val = targetJob.value.salaryRange?.trim() || ""
-      if (val && !/LPA$/i.test(val)) {
-        targetJob.value.salaryRange = val + " LPA"
-      }
-    }
-
-    const formatSalary = () => appendLPA(newJob)
-    const formatUpdateSalary = () => appendLPA(editingJob)
-
-    const newCompany = ref({
-      companyName: "",
-      industry: "",
-      location: ""
-    })
+    const selectedJob = ref(null)
+    const searchQuery = ref("")
+    const selectedCompany = ref("")
+    const selectedJobType = ref("")
+    const isApprovedCollapsed = ref(true)
+    const isRejectedCollapsed = ref(true)
 
     const loadJobs = async () => {
       try {
-        jobs.value = await getCentralJobs()
+        loading.value = true
+        jobs.value = await getCentralJobs("All")
       } catch (err) {
-        alert("Error loading jobs: " + err.message)
+        notify("Error loading jobs: " + err.message, "error")
+      } finally {
+        loading.value = false
       }
     }
 
@@ -331,132 +249,114 @@ export default {
       try {
         companies.value = await getCentralCompanies()
       } catch (err) {
-        alert("Error loading companies: " + err.message)
+        notify("Error loading companies: " + err.message, "error")
       }
     }
 
-    const toggleAddJob = () => {
-      showAddJob.value = !showAddJob.value
-      if (showAddJob.value) showUpdateJob.value = false
+    const handleApprove = async (jobId) => {
+      if (!(await confirm("Are you sure you want to approve this job?", "Approve Job"))) return
+      try {
+        loading.value = true
+        await approveJob(jobId)
+        notify("Job Approved Successfully", "success")
+        await loadJobs()
+      } catch (err) {
+        notify("Approval failed: " + err.message, "error")
+      } finally {
+        loading.value = false
+      }
     }
 
-    const toggleAddCompany = () => {
-      showAddCompany.value = !showAddCompany.value
+    const handleReject = async (jobId) => {
+      if (!(await confirm("Are you sure you want to reject this job? It will be permanently hidden.", "Reject Job"))) return
+      try {
+        loading.value = true
+        await rejectJob(jobId)
+        notify("Job Rejected Successfully", "success")
+        await loadJobs()
+      } catch (err) {
+        notify("Rejection failed: " + err.message, "error")
+      } finally {
+        loading.value = false
+      }
     }
 
-    const editJob = (job) => {
-      editingJob.value = { ...job }
-      // Clean up string fields in case of null
-      editingJob.value.title = editingJob.value.title || ""
-      editingJob.value.description = editingJob.value.description || ""
-      editingJob.value.requiredSkills = editingJob.value.requiredSkills || ""
-      editingJob.value.jobType = editingJob.value.jobType || ""
-      editingJob.value.salaryRange = editingJob.value.salaryRange || ""
-      editingJob.value.lastDate = editingJob.value.lastDate ? editingJob.value.lastDate.split('T')[0] : ""
+    const handleRestore = async (jobId) => {
+      if (!(await confirm("Are you sure you want to restore this job?", "Restore Job"))) return
+      try {
+        loading.value = true
+        await restoreJob(jobId)
+        notify("Job Restored Successfully", "success")
+        await loadJobs()
+      } catch (err) {
+        notify("Restoration failed: " + err.message, "error")
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const showDetails = (job) => {
+      selectedJob.value = job
+    }
+
+    const approveFromModal = async (jobId) => {
+      await handleApprove(jobId)
+      selectedJob.value = null
+    }
+
+    const rejectFromModal = async (jobId) => {
+      await handleReject(jobId)
+      selectedJob.value = null
+    }
+
+    const restoreFromModal = async (jobId) => {
+      await handleRestore(jobId)
+      selectedJob.value = null
+    }
+
+    const pendingJobs = computed(() => {
+      return filteredJobs.value.filter(j => !j.isApproved && j.isActive)
+    })
+
+    const approvedJobs = computed(() => {
+      return filteredJobs.value.filter(j => j.isApproved && j.isActive)
+    })
+
+    const rejectedJobs = computed(() => {
+      return filteredJobs.value.filter(j => !j.isActive)
+    })
+
+    const toggleApproved = () => {
+      isApprovedCollapsed.value = !isApprovedCollapsed.value
+    }
+
+    const toggleRejected = () => {
+      isRejectedCollapsed.value = !isRejectedCollapsed.value
+    }
+
+    const filteredJobs = computed(() => {
+      let filtered = jobs.value
       
-      let val = editingJob.value.salaryRange
-      if (val && /LPA$/i.test(val)) {
-        editingJob.value.salaryRange = val.replace(/\s*LPA$/i, "")
+      const q = searchQuery.value.toLowerCase()
+      if (q) {
+        filtered = filtered.filter(j => j.title?.toLowerCase().includes(q))
       }
 
-      showUpdateJob.value = true
-      showAddJob.value = false
-      updateErrors.value = {}
-    }
-
-    const cancelUpdate = () => {
-      showUpdateJob.value = false
-      editingJob.value = {}
-      updateErrors.value = {}
-    }
-
-    const createCompany = async () => {
-      try {
-        if (!newCompany.value.companyName) {
-          alert("Company name required")
-          return
-        }
-
-        loading.value = true
-        await addCompany(newCompany.value)
-
-        alert("Company Added Successfully")
-
-        newCompany.value = {
-          companyName: "",
-          industry: "",
-          location: ""
-        }
-
-        showAddCompany.value = false
-        await loadCompanies()
-      } catch (err) {
-        alert("Error: " + err.message)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const createJob = async () => {
-      formatSalary()
-      if (!validateJob()) {
-        return
+      if (selectedCompany.value) {
+        filtered = filtered.filter(j => j.companyId === parseInt(selectedCompany.value))
       }
 
-      try {
-        loading.value = true
-
-        // Ensure empty date is null, not ""
-        const payload = { ...newJob.value }
-        if (!payload.lastDate) payload.lastDate = null
-
-        await addJob(payload)
-
-        alert("Job Added Successfully")
-
-        newJob.value = {
-          companyId: null,
-          title: "",
-          description: "",
-          requiredSkills: "",
-          jobType: "",
-          salaryRange: "",
-          lastDate: ""
-        }
-        errors.value = {}
-
-        showAddJob.value = false
-        await loadJobs()
-      } catch (err) {
-        alert("Error: " + err.message)
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const saveUpdateJob = async () => {
-      formatUpdateSalary()
-      if (!validateUpdate()) {
-        return
+      if (selectedJobType.value) {
+        filtered = filtered.filter(j => j.jobType === selectedJobType.value)
       }
 
-      try {
-        loading.value = true
+      return filtered
+    })
 
-        // Ensure empty date is null, not ""
-        const payload = { ...editingJob.value }
-        if (!payload.lastDate) payload.lastDate = null
-
-        await updateJob(editingJob.value.jobId, payload)
-
-        alert("Job Updated Successfully")
-        showUpdateJob.value = false
-        await loadJobs()
-      } catch (err) {
-        alert("Error updating job: " + err.message)
-      } finally {
-        loading.value = false
-      }
+    const resetFilters = () => {
+      searchQuery.value = ""
+      selectedCompany.value = ""
+      selectedJobType.value = ""
     }
 
     onMounted(() => {
@@ -464,77 +364,543 @@ export default {
       loadCompanies()
     })
 
-    return {
-      jobs,
-      companies,
-      loading,
-      errors,
-      updateErrors,
-      showAddJob,
-      showAddCompany,
-      showUpdateJob,
-      newJob,
-      newCompany,
-      editingJob,
-      formatSalary,
-      formatUpdateSalary,
-      toggleAddJob,
-      toggleAddCompany,
-      editJob,
-      cancelUpdate,
-      createJob,
-      saveUpdateJob,
-      createCompany
-    }
+     return {
+       jobs,
+       filteredJobs,
+       pendingJobs,
+       approvedJobs,
+       rejectedJobs,
+       companies,
+        loading,
+        searchQuery,
+        handleApprove,
+        handleReject,
+        handleRestore,
+        selectedJob,
+        showDetails,
+        approveFromModal,
+        rejectFromModal,
+        restoreFromModal,
+        isApprovedCollapsed,
+        isRejectedCollapsed,
+        toggleApproved,
+        toggleRejected,
+        selectedCompany,
+        selectedJobType,
+        resetFilters
+     }
   }
 }
 </script>
 
 <style scoped>
-
-.jobs-page {
-  padding: 30px;
-  background: var(--bg-main);
-  min-height: 100vh;
-}
-
-/* Header */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
+/* Header & Filters */
+.page-header-container {
   background: var(--bg-card);
-  padding: 20px 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 40px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
 
-.header-left {
+.page-header {
+  margin-bottom: 24px;
+}
+
+.filters-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 2;
+  min-width: 250px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.filter-group {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.filter-group i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 10px 15px 10px 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-main);
+  font-size: 14px;
+  color: var(--text-primary);
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+.reset-btn {
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.page-header h2 {
-  margin: 0;
-  font-weight: 700;
-  color: var(--text-primary);
+.reset-btn:hover {
+  background: #e2e8f0;
+  color: #2563eb;
+  transform: rotate(-45deg);
+}
+
+.filter-input:focus, .filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Sections */
+.sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.job-section {
+  background: #f8fafc;
+  padding: 30px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collapsible-header {
+  cursor: pointer;
+  justify-content: space-between;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.collapsible-header:hover {
+  opacity: 0.8;
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.collapse-arrow {
+  font-size: 18px;
+  color: #94a3b8;
+  transition: transform 0.3s;
+}
+
+.section-title i {
   font-size: 24px;
 }
 
-/* Buttons */
+.pending-title { color: #f59e0b; }
+.approved-title { color: #10b981; }
+.rejected-title { color: #ef4444; }
+
+.count-badge {
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 5px;
+}
+
+.no-data-inline {
+  padding: 30px;
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  border: 1px dashed var(--border);
+}
+
+.status-badge.rejected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+/* Grid Layout */
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+/* Job Card */
+.job-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.job-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.pending-border {
+  border-top: 5px solid #f59e0b;
+}
+
+.approved-border {
+  border-top: 5px solid #10b981;
+}
+
+.rejected-border {
+  border-top: 5px solid #ef4444;
+}
+
+.card-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.company-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.status-badge.approved {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.job-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  line-height: 1.3;
+}
+
+.job-meta {
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.meta-item i {
+  margin-right: 10px;
+  font-size: 16px;
+  color: #64748b;
+}
+
+.card-footer {
+  display: flex;
+  gap: 12px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-btn {
+  flex: 1;
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.detail-btn:hover {
+  background: #e2e8f0;
+}
+
+.approve-card-btn {
+  flex: 1;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.approve-card-btn:hover {
+  background: #059669;
+}
+
+.reject-card-btn {
+  flex: 1;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.reject-card-btn:hover {
+  background: #fecaca;
+}
+
+.restore-card-btn {
+  flex: 1;
+  background: #dcfce7;
+  color: #15803d;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.restore-card-btn:hover {
+  background: #bbf7d0;
+}
+
+.no-data-card {
+  text-align: center;
+  padding: 60px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  color: var(--text-muted);
+}
+
+.no-data-card i {
+  font-size: 64px;
+  margin-bottom: 15px;
+  display: block;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalScale 0.3s ease-out;
+}
+
+@keyframes modalScale {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.close-modal-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-modal-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.detail-group {
+  margin-bottom: 20px;
+}
+
+.detail-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin: 0;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.description-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-line;
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+/* Keep current global styles but remove some now unused ones if needed */
 .primary-btn {
   background: #2563eb;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  transition: 0.2s;
 }
 
 .primary-btn:hover {
@@ -542,236 +908,24 @@ export default {
   transform: translateY(-1px);
 }
 
-.primary-btn:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.secondary-btn {
-  background: var(--recent-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
 .secondary-btn:hover {
-  background: var(--border);
-  color: var(--text-primary);
+  background: #e2e8f0;
 }
 
-.company-row .secondary-btn {
-  padding: 8px 14px;
-  margin-left: 10px;
-}
-
-.add-job-btn {
-  font-size: 15px;
-  padding: 10px 24px;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-/* Cards */
-.card-section {
-  background: var(--bg-card);
-  padding: 30px;
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-  margin-bottom: 25px;
-  border-top: 4px solid #3b82f6; 
-}
-
-.update-section {
-  border-top: 4px solid #f59e0b; /* Distinct color for update */
-}
-
-.section-title {
-  margin-bottom: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 18px;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-input, textarea, select {
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-textarea {
-  min-height: 80px;
-}
-
-.form-footer {
-  margin-top: 20px;
-  text-align: right;
-}
-
-/* Nested Company */
-.nested-form {
-  background: var(--recent-bg);
-  padding: 15px;
-  border-radius: 10px;
-  grid-column: 1 / -1;
-  border: 1px solid var(--border);
-}
-
-.nested-grid {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.nested-grid input {
-  flex: 1;
-  min-width: 150px;
-  margin-top: 0;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.nested-grid button {
-  white-space: nowrap;
-}
-
-/* Validation and Form Styling */
-.required {
-  color: #ef4444;
-}
-
-.is-invalid {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-}
-
-.error-msg {
-  color: #ef4444;
-  font-size: 13px;
-  margin-top: 6px;
-  display: block;
-}
-
-.salary-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.salary-input-wrapper input {
-  padding-right: 50px;
-}
-
-.currency-badge {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #64748b;
-  font-weight: 500;
-  font-size: 13px;
-  pointer-events: none;
-  margin-top: 3px;
-}
-
-.submit-btn {
-  padding: 10px 24px;
-  font-size: 15px;
-}
-
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-/* Table */
-.table-wrapper {
-  overflow-x: auto;
-}
-
-.job-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.job-table th {
-  background: var(--recent-bg);
-  text-align: left;
-  padding: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-muted);
-  border-bottom: 2px solid var(--recent-border);
-}
-
-.job-table td {
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.job-table tbody tr:hover {
-  background: var(--recent-bg);
-}
-
-.action-btn {
-  background: none;
+.danger-btn {
+  background: #ef4444;
+  color: white;
   border: none;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 6px;
-  padding: 6px 12px;
-  transition: all 0.2s;
-}
-
-.edit-btn {
-  color: #0284c7;
-  background: #e0f2fe;
-}
-
-.edit-btn:hover {
-  background: #bae6fd;
-}
-
-.update-section {
-  border-top: 4px solid #f59e0b;
-}
-
-.fw {
+  padding: 10px 24px;
+  border-radius: 10px;
   font-weight: 600;
-  color: var(--text-primary);
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-.no-data {
-  text-align: center;
-  padding: 20px;
-  color: var(--text-muted);
+.danger-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
 }
 
 </style>

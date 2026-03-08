@@ -118,6 +118,11 @@
 import { ref, onMounted, nextTick } from "vue"
 import draggable from "vuedraggable"
 import { getResumeSuggestions, downloadResumeFile } from "../services/api"
+import { useNotification } from "@/composables/useNotification"
+import { useConfirm } from "@/composables/useConfirm"
+
+const { notify } = useNotification()
+const { confirm } = useConfirm()
 
 const resume = ref({ 
   fullName: "", 
@@ -160,7 +165,7 @@ async function refreshSuggestions() {
   }
   catch(err){
     console.error("AI Error:", err)
-    alert("AI failed to generate suggestions: " + err.message)
+    notify("AI failed to generate suggestions: " + err.message, "error")
   }
   finally{
     loading.value = false
@@ -182,8 +187,8 @@ function addSection() {
   })
 }
 
-function deleteSection(secIndex) {
-  if(confirm("Are you sure you want to delete this section?")) {
+async function deleteSection(secIndex) {
+  if(await confirm("Are you sure you want to delete this section?", "Delete Section")) {
     resume.value.sections.splice(secIndex, 1)
   }
 }
@@ -215,7 +220,7 @@ async function handleDownload(){
     link.download = `${resume.value.fullName.replace(/\s+/g, '_')}_Resume.docx`
     link.click()
   }catch(err){
-    alert("Download failed: " + err.message)
+    notify("Download failed: " + err.message, "error")
   }
 }
 </script>

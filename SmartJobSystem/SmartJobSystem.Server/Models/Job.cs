@@ -14,6 +14,7 @@ namespace SmartJobSystem.Server.Models
         public DateTime PostedDate { get; set; }
         public DateTime? LastDate { get; set; }
         public bool IsActive { get; set; }
+        public bool IsApproved { get; set; }
 
         // Optional property for UI display
         public string? CompanyName { get; set; }

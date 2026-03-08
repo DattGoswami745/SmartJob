@@ -28,6 +28,8 @@ import CentralReports from "@/views/central/Reports.vue"
 /* Company Recruiter Pages */
 import CompanyDashboard from "@/views/company/Dashboard.vue"
 import SetupCompany from "@/views/company/SetupCompany.vue"
+import CompanyJobs from "@/views/company/Jobs.vue"
+import CompanyApplications from "@/views/company/Applications.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -83,7 +85,9 @@ const routes = [
     component: CompanyLayout,
     children: [
       { path: "dashboard", component: CompanyDashboard },
-      { path: "setup", component: SetupCompany }
+      { path: "setup", component: SetupCompany },
+      { path: "jobs", component: CompanyJobs },
+      { path: "applications", component: CompanyApplications }
     ]
   }
 ]

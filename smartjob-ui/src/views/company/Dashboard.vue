@@ -5,7 +5,7 @@
         <h2 class="fw-bold gradient-text m-0">Company Dashboard</h2>
         <p class="text-muted small">Manage your jobs, placements, and see recent activity.</p>
       </div>
-      <button class="btn btn-primary-gradient d-flex align-items-center gap-2 px-4 shadow-sm" @click="$router.push('/central/jobs')">
+      <button class="btn btn-primary-gradient d-flex align-items-center gap-2 px-4 shadow-sm" @click="$router.push('/company/jobs')">
         <Plus size="18" /> Post New Job
       </button>
     </div>
@@ -67,7 +67,7 @@
     <div class="row g-4">
       <!-- ================= RECENT APPLICATIONS ================= -->
       <div class="col-lg-8">
-        <div class="dashboard-card p-4 shadow-sm h-100">
+        <div class="dashboard-card p-4 shadow-sm mb-4">
           <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="fw-bold m-0 section-title">Recent Top Applications</h5>
             <router-link to="/central/applications" class="btn btn-light btn-sm px-3">View All</router-link>
@@ -86,14 +86,9 @@
               <tbody>
                 <tr v-for="app in recentApplications" :key="app.applicationId" class="table-row">
                   <td>
-                    <div class="d-flex align-items-center gap-3">
-                      <div class="avatar-sm bg-light text-primary fw-bold">
-                        {{ app.userName?.charAt(0) || 'U' }}
-                      </div>
-                      <div>
-                        <div class="fw-semibold">{{ app.userName }}</div>
-                        <div class="text-muted x-small">{{ app.email }}</div>
-                      </div>
+                    <div>
+                      <div class="fw-semibold">{{ app.userName }}</div>
+                      <div class="text-muted x-small">{{ app.email }}</div>
                     </div>
                   </td>
                   <td><span class="fw-medium">{{ app.jobTitle }}</span></td>
@@ -106,6 +101,38 @@
                 </tr>
                 <tr v-if="recentApplications.length === 0">
                   <td colspan="4" class="text-center py-5 text-muted">No recent applications found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ================= CURRENT OPPORTUNITIES ================= -->
+        <div class="dashboard-card p-4 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold m-0 section-title">Current Opportunities</h5>
+            <router-link to="/company/jobs" class="btn btn-light btn-sm px-3">Manage Jobs</router-link>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle custom-table">
+              <thead>
+                <tr>
+                  <th>Job Title</th>
+                  <th>Type</th>
+                  <th>Salary</th>
+                  <th>Deadline</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="job in activeJobs" :key="job.jobId" class="table-row">
+                  <td><span class="fw-semibold">{{ job.title }}</span></td>
+                  <td><span class="badge bg-light text-dark fw-normal">{{ job.jobType }}</span></td>
+                  <td><span class="text-success fw-medium">{{ job.salaryRange }}</span></td>
+                  <td class="small">{{ job.lastDate ? job.lastDate.split('T')[0] : 'Open' }}</td>
+                </tr>
+                <tr v-if="activeJobs.length === 0">
+                  <td colspan="4" class="text-center py-5 text-muted">No active jobs found.</td>
                 </tr>
               </tbody>
             </table>
@@ -185,6 +212,7 @@ const stats = ref({
 })
 
 const recentApplications = ref([])
+const activeJobs = ref([])
 const dailyChartRaw = ref([])
 const chartReady = ref(false)
 
@@ -210,6 +238,14 @@ const chartData = computed(() => {
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
         data: dailyChartRaw.value.map(d => d.totalPlaced),
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Active Jobs',
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        data: dailyChartRaw.value.map(d => d.totalJobs),
         fill: true,
         tension: 0.4
       }
@@ -249,6 +285,7 @@ async function loadData() {
     const res = await getCompanyDashboardData()
     stats.value = res.stats
     recentApplications.value = res.recentApplications
+    activeJobs.value = res.activeJobs
     dailyChartRaw.value = res.dailyChart
     
     // Calculate today's growth roughly from charts
@@ -371,15 +408,6 @@ onMounted(loadData)
 
 .table-row {
   transition: background 0.2s;
-}
-
-.avatar-sm {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .x-small { font-size: 0.7rem; }
