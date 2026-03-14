@@ -38,13 +38,15 @@ import {
   ClipboardList,
   Users,
   FileBarChart,
-  LogOut
+  LogOut,
+  ShieldCheck
 } from "lucide-vue-next"
 
 const router = useRouter()
 
 const menu = [
   { name: "Dashboard", path: "/central/dashboard", icon: LayoutDashboard },
+  { name: "Verification", path: "/central/verify-companies", icon: ShieldCheck },
   { name: "Manage Jobs", path: "/central/jobs", icon: Briefcase },
   { name: "Applications", path: "/central/applications", icon: ClipboardList },
   { name: "Manage Users", path: "/central/users", icon: Users },

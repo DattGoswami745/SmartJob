@@ -41,6 +41,8 @@ import {
   Settings,
   LogOut,
   PlusCircle,
+  Trophy,
+  ShieldCheck,
   X
 } from "lucide-vue-next";
 
@@ -54,9 +56,11 @@ const router = useRouter();
 
 const menu = [
   { name: "Dashboard", path: "/company/dashboard", icon: LayoutDashboard },
+  { name: "Verification", path: "/company/verification", icon: ShieldCheck },
   { name: "Posted Jobs", path: "/company/jobs", icon: Briefcase },
   { name: "Applications", path: "/company/applications", icon: ClipboardList },
-  { name: "Reports", path: "/central/reports", icon: FileBarChart }, // Reusing Central Reports for now
+  { name: "Reports", path: "/company/reports", icon: FileBarChart },
+  { name: "Placements", path: "/company/placements", icon: Trophy },
 ];
 
 function logout() {

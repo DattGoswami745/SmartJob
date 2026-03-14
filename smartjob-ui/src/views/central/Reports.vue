@@ -1,5 +1,47 @@
 <template>
   <div class="central-reports-page">
+    <!-- CONSOLIDATED REPORT GENERATOR -->
+    <div class="card-section mb-4 consolidated-report-section">
+      <div class="section-title mb-3 d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-spreadsheet-fill text-success fs-4"></i>
+        <h4 class="m-0 fw-bold">Consolidated Report Generator</h4>
+      </div>
+      
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted">Select Company</label>
+          <select v-model="selectedCompany" class="form-select custom-select">
+            <option :value="null">All Companies</option>
+            <option v-for="c in companies" :key="c.companyId" :value="c.companyId">
+              {{ c.companyName }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted">Select Job (Optional)</label>
+          <select v-model="selectedJobId" class="form-select custom-select">
+            <option :value="null">All Jobs</option>
+            <option v-for="j in approvedJobs" :key="j.jobId" :value="j.jobId">
+              {{ j.title }} ({{ j.companyName }})
+            </option>
+          </select>
+        </div>
+        
+        <div class="col-md-4">
+          <button 
+            class="btn primary-btn w-100 py-2 d-flex align-items-center justify-content-center gap-2 consolidated-btn"
+            @click="handleConsolidatedDownload"
+            :disabled="reportLoading"
+          >
+            <span v-if="reportLoading" class="spinner-border spinner-border-sm"></span>
+            <i v-else class="bi bi-cloud-arrow-down-fill"></i>
+            {{ reportLoading ? 'Generating...' : 'Download Consolidated Report' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- HEADER -->
     <div class="page-header">
       <div class="header-left">
@@ -50,8 +92,8 @@
               </td>
             </tr>
             <tr v-if="filteredJobs.length === 0">
-              <td colspan="5" class="no-data">
-                {{ jobs.length === 0 ? 'Loading jobs...' : 'No jobs match your search.' }}
+              <td colspan="5" class="no-data text-center py-4">
+                {{ loading ? 'Loading reports...' : 'No jobs matched your search.' }}
               </td>
             </tr>
           </tbody>
@@ -75,74 +117,87 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, computed } from "vue"
-import { getCentralJobs, downloadJobReport } from "@/services/api"
+import { getCentralJobs, downloadJobReport, getCompanies, downloadCentralMultiReport } from "@/services/api"
 
-export default {
-  setup() {
-    const jobs = ref([])
-    const searchJob = ref("")
-    const loading = ref(false)
+const jobs = ref([])
+const companies = ref([])
+const searchJob = ref("")
+const loading = ref(false)
+const reportLoading = ref(false)
 
-    const showErrorModal = ref(false)
-    const errorMessage = ref("")
+const selectedCompany = ref(null)
+const selectedJobId = ref(null)
 
-    const loadJobs = async () => {
-      try {
-        loading.value = true
-        jobs.value = await getCentralJobs()
-      } catch (err) {
-        alert("Error loading jobs: " + err.message)
-      } finally {
-        loading.value = false
-      }
-    }
+const showErrorModal = ref(false)
+const errorMessage = ref("")
 
-    const filteredJobs = computed(() => {
-      if (!searchJob.value.trim()) return jobs.value
-      
-      const searchTerm = searchJob.value.toLowerCase()
-      return jobs.value.filter(j => 
-        j.title?.toLowerCase().includes(searchTerm) || 
-        (j.companyName && j.companyName.toLowerCase().includes(searchTerm))
-      )
-    })
-
-    const handleDownload = async (jobId, title) => {
-      console.log(`Triggering download for: ${title} (Job ID: ${jobId})`)
-      try {
-        await downloadJobReport(jobId)
-      } catch (err) {
-        errorMessage.value = `Cannot generate report. ${err.message}`
-        showErrorModal.value = true
-      }
-    }
-
-    const closeErrorModal = () => {
-      showErrorModal.value = false
-    }
-
-    onMounted(() => {
-      loadJobs()
-    })
-
-    return {
-      jobs,
-      filteredJobs,
-      searchJob,
-      loading,
-      handleDownload,
-      showErrorModal,
-      errorMessage,
-      closeErrorModal
-    }
+const loadData = async () => {
+  try {
+    loading.value = true
+    const [jobsData, companiesData] = await Promise.all([
+      getCentralJobs(),
+      getCompanies()
+    ])
+    jobs.value = jobsData
+    companies.value = companiesData
+  } catch (err) {
+    console.error("Error loading reports data:", err)
+  } finally {
+    loading.value = false
   }
 }
+
+const approvedJobs = computed(() => {
+  let list = jobs.value.filter(j => j.isApproved)
+  if (selectedCompany.value) {
+    list = list.filter(j => j.companyId === selectedCompany.value)
+  }
+  return list
+})
+
+const filteredJobs = computed(() => {
+  if (!searchJob.value.trim()) return jobs.value
+  
+  const searchTerm = searchJob.value.toLowerCase()
+  return jobs.value.filter(j => 
+    j.title?.toLowerCase().includes(searchTerm) || 
+    (j.companyName && j.companyName.toLowerCase().includes(searchTerm))
+  )
+})
+
+const handleDownload = async (jobId, title) => {
+  try {
+    await downloadJobReport(jobId)
+  } catch (err) {
+    errorMessage.value = `Cannot generate report. ${err.message}`
+    showErrorModal.value = true
+  }
+}
+
+const handleConsolidatedDownload = async () => {
+  try {
+    reportLoading.value = true
+    await downloadCentralMultiReport(selectedCompany.value, selectedJobId.value)
+  } catch (err) {
+    errorMessage.value = `Error: ${err.message}`
+    showErrorModal.value = true
+  } finally {
+    reportLoading.value = false
+  }
+}
+
+const closeErrorModal = () => {
+  showErrorModal.value = false
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
@@ -203,6 +258,58 @@ export default {
   border-top: 4px solid #8b5cf6; /* Unique Purple color for Reports */
 }
 
+/* Consolidated Report Section */
+.consolidated-report-section {
+  border-top: 4px solid #10b981 !important; /* Green for consolidated action */
+  transition: all 0.3s ease;
+}
+
+.consolidated-report-section:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+}
+
+.section-title h4 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.custom-select {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.custom-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.consolidated-btn {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+}
+
+.consolidated-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
+}
+
+.consolidated-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Table */
 .table-wrapper {
   overflow-x: auto;
@@ -241,8 +348,6 @@ export default {
 }
 
 .no-data {
-  text-align: center;
-  padding: 30px;
   color: var(--text-muted);
   font-style: italic;
 }
@@ -306,10 +411,7 @@ export default {
   font-size: 15px;
 }
 
-/* ================================= */
-/* MODALS */
-/* ================================= */
-
+/* Modals */
 .custom-modal-overlay {
   position: fixed;
   top: 0;
@@ -329,7 +431,7 @@ export default {
   width: 90%;
   max-width: 400px;
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   animation: modal-fade-in 0.3s ease-out forwards;
 }
@@ -352,7 +454,6 @@ export default {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary);
 }
 
 .close-btn {
@@ -362,26 +463,12 @@ export default {
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
-  border-radius: 50%;
-  transition: all 0.2s;
-  display: flex;
-}
-
-.close-btn:hover {
-  background: var(--border);
-  color: var(--text-primary);
 }
 
 .modal-body {
   padding: 24px;
   font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.5;
-}
-
-.error-body {
   text-align: center;
-  padding-bottom: 10px;
 }
 
 .error-icon {
@@ -403,7 +490,6 @@ export default {
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
   border: none;
 }
 
@@ -412,7 +498,5 @@ export default {
   color: white;
 }
 
-.ok-btn:hover {
-  background: #2563eb;
-}
+.fs-4 { font-size: 1.5rem !important; }
 </style>

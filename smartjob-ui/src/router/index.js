@@ -24,12 +24,16 @@ import CentralJobs from "@/views/central/Jobs.vue"
 import CentralApplications from "@/views/central/Applications.vue"
 import CentralUsers from "@/views/central/Users.vue"
 import CentralReports from "@/views/central/Reports.vue"
+import CentralVerifyCompanies from "@/views/central/VerifyCompanies.vue"
 
 /* Company Recruiter Pages */
 import CompanyDashboard from "@/views/company/Dashboard.vue"
 import SetupCompany from "@/views/company/SetupCompany.vue"
 import CompanyJobs from "@/views/company/Jobs.vue"
 import CompanyApplications from "@/views/company/Applications.vue"
+import CompanyReports from "@/views/company/Reports.vue"
+import CompanyPlacements from "@/views/company/Placements.vue"
+import CompanyVerification from "@/views/company/Verification.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -75,7 +79,8 @@ const routes = [
       { path: "jobs", component: CentralJobs },
       { path: "applications", component: CentralApplications },
       { path: "users", component: CentralUsers },
-      { path: "reports", component: CentralReports }
+      { path: "reports", component: CentralReports },
+      { path: "verify-companies", component: CentralVerifyCompanies }
     ]
   },
 
@@ -87,7 +92,10 @@ const routes = [
       { path: "dashboard", component: CompanyDashboard },
       { path: "setup", component: SetupCompany },
       { path: "jobs", component: CompanyJobs },
-      { path: "applications", component: CompanyApplications }
+      { path: "applications", component: CompanyApplications },
+      { path: "reports", component: CompanyReports },
+      { path: "placements", component: CompanyPlacements },
+      { path: "verification", component: CompanyVerification }
     ]
   }
 ]

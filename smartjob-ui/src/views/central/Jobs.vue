@@ -684,64 +684,77 @@ export default {
   flex: 1;
   background: #f1f5f9;
   color: #475569;
-  border: none;
+  border: 1px solid #e2e8f0;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s;
 }
 
 .detail-btn:hover {
   background: #e2e8f0;
+  transform: translateY(-1px);
 }
 
 .approve-card-btn {
   flex: 1;
-  background: #10b981;
-  color: white;
-  border: none;
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s;
 }
 
 .approve-card-btn:hover {
-  background: #059669;
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
 }
 
 .reject-card-btn {
   flex: 1;
-  background: #fee2e2;
-  color: #dc2626;
-  border: none;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s;
 }
 
 .reject-card-btn:hover {
-  background: #fecaca;
+  background: #e11d48;
+  color: white;
+  border-color: #e11d48;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
 }
 
 .restore-card-btn {
   flex: 1;
-  background: #dcfce7;
-  color: #15803d;
-  border: none;
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
   padding: 10px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: all 0.2s;
 }
 
 .restore-card-btn:hover {
-  background: #bbf7d0;
+  background: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 .no-data-card {

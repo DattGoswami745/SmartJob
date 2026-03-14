@@ -301,10 +301,15 @@ export default {
     }
 
     const filteredUsers = computed(() => {
-      if (!searchUser.value.trim()) return users.value
+      let filtered = users.value
+      
+      // Only show normal end users
+      filtered = filtered.filter(u => u.role === 'User')
+
+      if (!searchUser.value.trim()) return filtered
       
       const searchTerm = searchUser.value.toLowerCase()
-      return users.value.filter(u => 
+      return filtered.filter(u => 
         u.fullName?.toLowerCase().includes(searchTerm) || 
         u.email?.toLowerCase().includes(searchTerm)
       )
@@ -486,6 +491,11 @@ export default {
 .central-role {
   background: #fcedea;
   color: #ea580c;
+}
+
+.company-role {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .active {

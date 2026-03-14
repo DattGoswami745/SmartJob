@@ -32,10 +32,6 @@
         <button class="reset-btn" @click="resetFilters" title="Reset Filters">
           <i class="bi bi-arrow-counterclockwise"></i>
         </button>
-
-        <button class="download-report-btn" @click="handleDownloadReport" :disabled="loading">
-          <i class="bi bi-file-earmark-spreadsheet"></i> Report
-        </button>
       </div>
     </div>
 
@@ -53,6 +49,7 @@
               <th>Applicant Name</th>
               <th>Email</th>
               <th>Applied For</th>
+              <th>Status</th>
               <th>Date Applied</th>
               <th>Actions</th>
             </tr>
@@ -63,6 +60,11 @@
               <td>{{ app.email }}</td>
               <td>
                 <span class="job-badge">{{ app.jobTitle }}</span>
+              </td>
+              <td>
+                <div :class="['status-badge-mini', app.applicationStatus === 'Placed' ? 'placed' : 'pending']">
+                  {{ app.applicationStatus || 'Pending' }}
+                </div>
               </td>
               <td>{{ formatDate(app.appliedDate) }}</td>
               <td>
@@ -177,7 +179,7 @@
 
 <script>
 import { ref, onMounted, computed } from "vue"
-import { getCompanyApplications, deleteCompanyApplication, getUserProfileForCompany, downloadCompanyApplicationsReport } from "@/services/api"
+import { getCompanyApplications, deleteCompanyApplication, getUserProfileForCompany } from "@/services/api"
 import { useNotification } from "@/composables/useNotification"
 
 export default {
@@ -287,10 +289,6 @@ export default {
       })
     }
 
-    const handleDownloadReport = () => {
-      downloadCompanyApplicationsReport(searchQuery.value, selectedJobId.value)
-    }
-
     onMounted(loadApplications)
 
     return {
@@ -311,8 +309,7 @@ export default {
       profileData,
       openProfileModal,
       closeProfileModal,
-      formatDate,
-      handleDownloadReport
+      formatDate
     }
   }
 }
@@ -420,38 +417,12 @@ export default {
   color: #3b82f6;
 }
 
-.download-report-btn {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 10px 18px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-}
-
-.download-report-btn:hover:not(:disabled) {
-  background: #059669;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
-}
-
-.download-report-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 /* Table */
 .card-section {
   background: var(--bg-card);
   border-radius: 20px;
   border: 1px solid var(--border);
+  border-top: 5px solid #ce0bf5ff;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
@@ -501,6 +472,26 @@ export default {
   font-weight: 500;
 }
 
+.status-badge-mini {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge-mini.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-badge-mini.placed {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -520,23 +511,31 @@ export default {
 }
 
 .view-btn {
-  background: #f1f5f9;
-  color: #475569;
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .view-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 .delete-btn {
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
 }
 
 .delete-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
+  background: #e11d48;
+  color: white;
+  border-color: #e11d48;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
 }
 
 /* Modals */

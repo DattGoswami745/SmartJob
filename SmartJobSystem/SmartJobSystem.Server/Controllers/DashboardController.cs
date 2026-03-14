@@ -105,7 +105,8 @@ public class DashboardController : ControllerBase
             totalJobs = totalJobs,
             appliedJobs = appliedJobs,
             skillMatch = Math.Round(finalMatch, 2),
-            isProfileComplete = isProfileComplete
+            isProfileComplete = isProfileComplete,
+            isPlaced = (int)new SqlCommand("SELECT COUNT(*) FROM Applications WHERE UserId=@uid AND ApplicationStatus='Placed'", con).ExecuteScalar() > 0
         });
     }
 

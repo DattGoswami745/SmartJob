@@ -243,7 +243,8 @@ namespace SmartJobSystem.Server.Data
                     u.FullName,
                     u.Email,
                     j.Title AS JobTitle,
-                    c.CompanyName
+                    c.CompanyName,
+                    a.ApplicationStatus
                 FROM Applications a
                 JOIN Users u ON a.UserId = u.UserId
                 JOIN Jobs j ON a.JobId = j.JobId
@@ -264,7 +265,8 @@ namespace SmartJobSystem.Server.Data
                     FullName = reader.GetString(3),
                     Email = reader.GetString(4),
                     JobTitle = reader.GetString(5),
-                    CompanyName = reader.GetString(6)
+                    CompanyName = reader.GetString(6),
+                    ApplicationStatus = reader.GetString(7)
                 });
             }
 
@@ -303,7 +305,8 @@ namespace SmartJobSystem.Server.Data
                     j.Title AS JobTitle,
                     j.JobId,
                     j.JobType,
-                    c.CompanyName
+                    c.CompanyName,
+                    a.ApplicationStatus
                 FROM Applications a
                 JOIN Users u ON a.UserId = u.UserId
                 JOIN Jobs j ON a.JobId = j.JobId
@@ -329,7 +332,8 @@ namespace SmartJobSystem.Server.Data
                     JobTitle = reader.GetString(5),
                     JobId = reader.GetInt32(6),
                     JobType = reader.IsDBNull(7) ? "" : reader.GetString(7),
-                    CompanyName = reader.IsDBNull(8) ? "" : reader.GetString(8)
+                    CompanyName = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                    ApplicationStatus = reader.GetString(9)
                 });
             }
 
@@ -354,6 +358,95 @@ namespace SmartJobSystem.Server.Data
             var rowsAffected = await cmd.ExecuteNonQueryAsync();
 
             return rowsAffected > 0;
+        }
+
+        // 🔹 Mark Candidate as Placed
+        public async Task<bool> MarkApplicationAsPlacedAsync(int companyId, int applicationId)
+        {
+            using var con = GetConnection();
+            await con.OpenAsync();
+
+            // 1. Get Info, Verify Ownership, and find an Admin for notification
+            int userId = 0;
+            int? adminId = null;
+            string jobTitle = "";
+
+            using (var cmdInfo = new SqlCommand(@"
+                SELECT TOP 1 
+                    a.UserId, 
+                    j.Title,
+                    (SELECT TOP 1 UserId FROM Users WHERE Role = 'SuperAdmin' AND IsActive = 1) as AdminId
+                FROM Applications a
+                INNER JOIN Jobs j ON a.JobId = j.JobId
+                WHERE a.ApplicationId = @AppId AND j.CompanyId = @CompanyId
+            ", con))
+            {
+                cmdInfo.Parameters.AddWithValue("@AppId", applicationId);
+                cmdInfo.Parameters.AddWithValue("@CompanyId", companyId);
+
+                using var reader = await cmdInfo.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    userId = reader.GetInt32(0);
+                    jobTitle = reader.GetString(1);
+                    adminId = reader.IsDBNull(2) ? (int?)null : reader.GetInt32(2);
+                }
+                else
+                {
+                    return false; // Not found or doesn't belong to company
+                }
+            }
+
+            using var transaction = con.BeginTransaction();
+            try
+            {
+                // 2. Update status
+                using var cmdUpdate = new SqlCommand(@"
+                    UPDATE Applications
+                    SET ApplicationStatus = 'Placed'
+                    WHERE ApplicationId = @AppId
+                ", con, transaction);
+                cmdUpdate.Parameters.AddWithValue("@AppId", applicationId);
+                await cmdUpdate.ExecuteNonQueryAsync();
+
+                // 2.5 Auto-remove from all other applications
+                using var cmdRemoveOthers = new SqlCommand(@"
+                    DELETE FROM Applications 
+                    WHERE UserId = @UserId AND ApplicationId != @AppId
+                ", con, transaction);
+                cmdRemoveOthers.Parameters.AddWithValue("@UserId", userId);
+                cmdRemoveOthers.Parameters.AddWithValue("@AppId", applicationId);
+                await cmdRemoveOthers.ExecuteNonQueryAsync();
+
+                // 3. Log Activity for Candidate
+                using var cmdLogCandidate = new SqlCommand(@"
+                    INSERT INTO UserActivityLogs (UserId, Action, ActionDate)
+                    VALUES (@UId, @Action, GETDATE())
+                ", con, transaction);
+                cmdLogCandidate.Parameters.AddWithValue("@UId", userId);
+                cmdLogCandidate.Parameters.AddWithValue("@Action", $"Congratulations! You have been marked as Placed for: {jobTitle}");
+                await cmdLogCandidate.ExecuteNonQueryAsync();
+
+                // 4. Log Activity for Central User (Admin)
+                if (adminId.HasValue)
+                {
+                    using var cmdLogCentral = new SqlCommand(@"
+                        INSERT INTO UserActivityLogs (UserId, Action, ActionDate)
+                        VALUES (@AdminId, @Action, GETDATE())
+                    ", con, transaction);
+                    cmdLogCentral.Parameters.AddWithValue("@AdminId", adminId.Value);
+                    cmdLogCentral.Parameters.AddWithValue("@Action", $"Placement Alert: Candidate (ID: {userId}) has been placed for {jobTitle}");
+                    await cmdLogCentral.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         // 🔹 Get User Profile (For Admin/Central)
@@ -518,6 +611,67 @@ namespace SmartJobSystem.Server.Data
 
         /* ===================== CENTRAL REPORTS ===================== */
 
+        public async Task<object> GetCentralMultiFilterReportAsync(int? companyId, int? jobId)
+        {
+            using var con = GetConnection();
+            await con.OpenAsync();
+
+            var applicants = new List<object>();
+            string condition = "WHERE (j.IsApproved = 1 OR j.IsApproved = 0)"; // Approved or Pending
+
+            if (companyId.HasValue && companyId > 0)
+                condition += " AND j.CompanyId = @CompanyId";
+            if (jobId.HasValue && jobId > 0)
+                condition += " AND j.JobId = @JobId";
+
+            using (var cmd = new SqlCommand($@"
+                SELECT 
+                    u.FullName,
+                    u.Email,
+                    a.AppliedDate,
+                    a.ApplicationStatus,
+                    p.Skills,
+                    p.ExperienceYears,
+                    p.Education,
+                    p.PreferredLocation,
+                    j.Title as JobTitle,
+                    c.CompanyName
+                FROM Applications a
+                JOIN Users u ON a.UserId = u.UserId
+                JOIN Jobs j ON a.JobId = j.JobId
+                LEFT JOIN Companies c ON j.CompanyId = c.CompanyId
+                LEFT JOIN UserProfiles p ON u.UserId = p.UserId
+                {condition}
+                ORDER BY a.AppliedDate DESC
+            ", con))
+            {
+                if (companyId.HasValue && companyId > 0)
+                    cmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId.Value;
+                if (jobId.HasValue && jobId > 0)
+                    cmd.Parameters.Add("@JobId", SqlDbType.Int).Value = jobId.Value;
+
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    applicants.Add(new
+                    {
+                        FullName = reader.GetString(0),
+                        Email = reader.GetString(1),
+                        AppliedDate = reader.GetDateTime(2),
+                        Status = reader.IsDBNull(3) ? "Pending" : reader.GetString(3),
+                        Skills = reader.IsDBNull(4) ? "N/A" : reader.GetString(4),
+                        ExperienceValue = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+                        Education = reader.IsDBNull(6) ? "N/A" : reader.GetString(6),
+                        Location = reader.IsDBNull(7) ? "N/A" : reader.GetString(7),
+                        JobTitle = reader.GetString(8),
+                        CompanyName = reader.IsDBNull(9) ? "N/A" : reader.GetString(9)
+                    });
+                }
+            }
+
+            return applicants;
+        }
+
         public async Task<object> GetJobApplicantsReportAsync(int jobId)
         {
             using var con = GetConnection();
@@ -574,9 +728,11 @@ namespace SmartJobSystem.Server.Data
                         AppliedDate = readerApp.GetDateTime(2),
                         Status = readerApp.IsDBNull(3) ? "Pending" : readerApp.GetString(3),
                         Skills = readerApp.IsDBNull(4) ? "N/A" : readerApp.GetString(4),
-                        Experience = readerApp.IsDBNull(5) ? 0 : readerApp.GetInt32(5),
+                        ExperienceValue = readerApp.IsDBNull(5) ? 0 : readerApp.GetInt32(5),
                         Education = readerApp.IsDBNull(6) ? "N/A" : readerApp.GetString(6),
-                        Location = readerApp.IsDBNull(7) ? "N/A" : readerApp.GetString(7)
+                        Location = readerApp.IsDBNull(7) ? "N/A" : readerApp.GetString(7),
+                        JobTitle = jobTitle,
+                        CompanyName = companyName
                     });
                 }
             }
@@ -661,7 +817,7 @@ namespace SmartJobSystem.Server.Data
 
             using var con = GetConnection();
             using var cmd = new SqlCommand(@"
-                SELECT CompanyId, CompanyName, Industry, Location
+                SELECT CompanyId, CompanyName, Industry, Location, IsCompanyVerified
                 FROM Companies
                 ORDER BY CompanyName
             ", con);
@@ -676,7 +832,8 @@ namespace SmartJobSystem.Server.Data
                     CompanyId = reader.GetInt32(0),
                     CompanyName = reader.GetString(1),
                     Industry = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                    Location = reader.IsDBNull(3) ? "" : reader.GetString(3)
+                    Location = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    IsCompanyVerified = reader.IsDBNull(4) ? false : reader.GetBoolean(4)
                 });
             }
 
@@ -701,6 +858,141 @@ namespace SmartJobSystem.Server.Data
             var result = await cmd.ExecuteScalarAsync();
 
             return Convert.ToInt32(result);
+        }
+
+        /* ===================== COMPANY VERIFICATION ===================== */
+
+        public async Task<bool> UploadVerificationDocumentsAsync(List<CompanyVerificationDocument> docs)
+        {
+            using var con = GetConnection();
+            await con.OpenAsync();
+            using var transaction = con.BeginTransaction();
+
+            try
+            {
+                foreach (var doc in docs)
+                {
+                    using var cmd = new SqlCommand(@"
+                        INSERT INTO dbo.CompanyVerificationDocuments 
+                        (nCompanyId, vDocumentType, vFileName, vFilePath, nRecordedBy, dRecordedOnUTC)
+                        VALUES (@CompanyId, @Type, @FileName, @FilePath, @RecordedBy, GETUTCDATE())
+                    ", con, transaction);
+
+                    cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = doc.CompanyId;
+                    cmd.Parameters.Add("@Type", SqlDbType.VarChar, 100).Value = doc.DocumentType;
+                    cmd.Parameters.Add("@FileName", SqlDbType.VarChar, 500).Value = doc.FileName;
+                    cmd.Parameters.Add("@FilePath", SqlDbType.VarChar, 1000).Value = doc.FilePath;
+                    cmd.Parameters.Add("@RecordedBy", SqlDbType.BigInt).Value = (object)doc.RecordedBy ?? DBNull.Value;
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+                return true;    
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<CompanyVerificationDocument>> GetCompanyDocumentsAsync(int companyId)
+        {
+            var docs = new List<CompanyVerificationDocument>();
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                SELECT nDocumentId, nCompanyId, vDocumentType, vFileName, vFilePath, 
+                       IsVerified, nVerifiedBy, dVerifiedOnUTC, IsRejected, vRejectReason
+                FROM dbo.CompanyVerificationDocuments
+                WHERE nCompanyId = @CompanyId
+            ", con);
+            cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = companyId;
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                docs.Add(new CompanyVerificationDocument
+                {
+                    DocumentId = reader.GetInt64(0),
+                    CompanyId = reader.GetInt64(1),
+                    DocumentType = reader.GetString(2),
+                    FileName = reader.GetString(3),
+                    FilePath = reader.GetString(4),
+                    IsVerified = reader.GetBoolean(5),
+                    VerifiedBy = reader.IsDBNull(6) ? (long?)null : reader.GetInt64(6),
+                    VerifiedOnUTC = reader.IsDBNull(7) ? (DateTime?)null : reader.GetDateTime(7),
+                    IsRejected = reader.GetBoolean(8),
+                    RejectReason = reader.IsDBNull(9) ? "" : reader.GetString(9)
+                });
+            }
+            return docs;
+        }
+
+        public async Task<bool> VerifyCompanyAsync(int companyId, bool isApproved, string reason, int adminId)
+        {
+            using var con = GetConnection();
+            await con.OpenAsync();
+            using var transaction = con.BeginTransaction();
+
+            try
+            {
+                var updateDocCmd = new SqlCommand(@"
+                    UPDATE dbo.CompanyVerificationDocuments
+                    SET IsVerified = @IsVerified, 
+                        IsRejected = @IsRejected,
+                        vRejectReason = @Reason,
+                        nVerifiedBy = @AdminId,
+                        dVerifiedOnUTC = GETUTCDATE()
+                    WHERE nCompanyId = @CompanyId
+                ", con, transaction);
+
+                updateDocCmd.Parameters.Add("@IsVerified", SqlDbType.Bit).Value = isApproved;
+                updateDocCmd.Parameters.Add("@IsRejected", SqlDbType.Bit).Value = !isApproved;
+                updateDocCmd.Parameters.Add("@Reason", SqlDbType.VarChar, 500).Value = (object)reason ?? DBNull.Value;
+                updateDocCmd.Parameters.Add("@AdminId", SqlDbType.BigInt).Value = adminId;
+                updateDocCmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = companyId;
+
+                await updateDocCmd.ExecuteNonQueryAsync();
+
+                if (isApproved)
+                {
+                    var updateCompanyCmd = new SqlCommand(@"
+                        UPDATE Companies SET IsCompanyVerified = 1 WHERE CompanyId = @CompanyId
+                    ", con, transaction);
+                    updateCompanyCmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId;
+                    await updateCompanyCmd.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task DeleteCompanyDocumentsAsync(int companyId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("DELETE FROM dbo.CompanyVerificationDocuments WHERE nCompanyId = @CompanyId", con);
+            cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = companyId;
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task<bool> IsCompanyVerifiedAsync(int companyId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("SELECT IsCompanyVerified FROM Companies WHERE CompanyId = @CompanyId", con);
+            cmd.Parameters.Add("@CompanyId", SqlDbType.Int).Value = companyId;
+
+            await con.OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            return result != null && Convert.ToBoolean(result);
         }
     }
 }

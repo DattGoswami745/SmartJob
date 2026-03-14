@@ -1,23 +1,61 @@
 <template>
   <div class="central-applications-page">
-    <!-- HEADER -->
-    <div class="page-header">
-      <div class="header-left">
-        <h2>Central Applications</h2>
+    <!-- HEADER & FILTERS -->
+    <div class="page-header-container">
+      <div class="page-header">
+        <div class="header-left">
+          <h2>Central Applications</h2>
+        </div>
       </div>
-      <div class="header-right">
-        <input 
-          type="text" 
-          v-model="searchCompany" 
-          placeholder="Filter by Company Name..." 
-          class="search-input"
-        />
+
+      <div class="filters-bar">
+        <!-- Search by Applicant -->
+        <div class="search-box">
+          <i class="bi bi-person-search"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            placeholder="Search by applicant name..." 
+            class="filter-input"
+          />
+        </div>
+
+        <!-- Filter by Company -->
+        <div class="filter-group">
+          <i class="bi bi-building"></i>
+          <input 
+            type="text" 
+            v-model="searchCompany" 
+            placeholder="Search by company..." 
+            class="filter-input"
+          />
+        </div>
+
+        <!-- Filter by Job Title -->
+        <div class="filter-group">
+          <i class="bi bi-briefcase"></i>
+          <input 
+            type="text" 
+            v-model="searchJob" 
+            placeholder="Search by job title..." 
+            class="filter-input"
+          />
+        </div>
+
+        <button class="reset-btn" @click="resetFilters" title="Reset Filters">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
       </div>
     </div>
 
     <!-- APPLICATIONS TABLE -->
     <div class="card-section">
-      <div class="table-wrapper">
+      <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">Loading applications...</p>
+      </div>
+
+      <div v-else class="table-wrapper">
         <table class="app-table">
           <thead>
             <tr>
@@ -39,17 +77,19 @@
               </td>
               <td>{{ formatDate(app.appliedDate) }}</td>
               <td>
-                <button class="action-btn view-btn" @click="openProfileModal(app)">
-                  <i class="bi bi-person-lines-fill"></i> View Profile
-                </button>
-                <button class="action-btn delete-btn" @click="openDeleteModal(app.applicationId)">
-                  <i class="bi bi-trash-fill"></i> Remove
-                </button>
+                <div class="action-buttons">
+                  <button class="action-btn view-btn" @click="openProfileModal(app)" title="View Profile">
+                    <i class="bi bi-person-lines-fill"></i> View
+                  </button>
+                  <button class="action-btn delete-btn" @click="openDeleteModal(app)" title="Remove Application">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr v-if="filteredApplications.length === 0">
               <td colspan="6" class="no-data">
-                {{ applications.length === 0 ? 'No applications found.' : 'No applications match your search.' }}
+                {{ applications.length === 0 ? 'No applications found.' : 'No applications match your filtering.' }}
               </td>
             </tr>
           </tbody>
@@ -57,45 +97,53 @@
       </div>
     </div>
 
-    <!-- REMOVE CONFIRMATION MODAL -->
-    <div class="custom-modal-overlay" v-if="showDeleteModal" @click.self="closeDeleteModal">
-      <div class="custom-modal">
+    <!-- DELETE MODAL -->
+    <div v-if="appToDelete" class="modal-overlay" @click.self="appToDelete = null">
+      <div class="modal-content mini-modal">
         <div class="modal-header">
           <h3>Remove Application</h3>
-          <button class="close-btn" @click="closeDeleteModal"><i class="bi bi-x-lg"></i></button>
+          <button class="close-modal-btn" @click="appToDelete = null">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <div class="modal-body">
-          <p>Are you sure you want to remove this application? This action cannot be undone.</p>
+        <div class="modal-body text-center">
+          <div class="warning-icon">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <p>Are you sure you want to remove <strong>{{ appToDelete.fullName }}</strong>'s application for <strong>{{ appToDelete.jobTitle }}</strong> at <strong>{{ appToDelete.companyName }}</strong>?</p>
+          <p class="text-muted small">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
-          <button class="secondary-btn" @click="closeDeleteModal">Cancel</button>
-          <button class="primary-btn delete-confirm-btn" @click="confirmDelete" :disabled="loading">
-            <span class="spinner-border spinner-border-sm me-2" v-if="loading"></span>
-            {{ loading ? "Removing..." : "Yes, Remove" }}
+          <button class="secondary-btn" @click="appToDelete = null">Cancel</button>
+          <button class="danger-btn" @click="confirmDelete" :disabled="submitting">
+            <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            Remove Application
           </button>
         </div>
       </div>
     </div>
 
-    <!-- VIEW PROFILE MODAL -->
-    <div class="custom-modal-overlay" v-if="showProfileModal" @click.self="closeProfileModal">
-      <div class="custom-modal profile-modal">
+    <!-- PROFILE MODAL -->
+    <div v-if="showProfileModal" class="modal-overlay" @click.self="closeProfileModal">
+      <div class="modal-content profile-modal">
         <div class="modal-header">
-          <h3>Applicant Profile</h3>
-          <button class="close-btn" @click="closeProfileModal"><i class="bi bi-x-lg"></i></button>
+          <h2>Applicant Profile</h2>
+          <button class="close-modal-btn" @click="closeProfileModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
         <div class="modal-body">
-          <div v-if="loadingProfile" class="loading-state">
-            <span class="spinner-border text-primary"></span>
-            <p>Loading profile details...</p>
+          <div v-if="loadingProfile" class="text-center py-4">
+            <div class="spinner-border text-primary"></div>
+            <p>Loading details...</p>
           </div>
           
           <div v-else-if="profileData">
             <div class="profile-header-info">
               <div class="basic-info">
                 <h4>{{ selectedApp.fullName }}</h4>
-                <p><i class="bi bi-envelope-fill text-muted"></i> {{ selectedApp.email }}</p>
-                <p><i class="bi bi-geo-alt-fill text-muted"></i> {{ profileData.preferredLocation || 'Location not specified' }}</p>
+                <p><i class="bi bi-envelope"></i> {{ selectedApp.email }}</p>
+                <p><i class="bi bi-geo-alt"></i> {{ profileData.preferredLocation || 'Location not specified' }}</p>
               </div>
             </div>
 
@@ -123,19 +171,18 @@
             <div class="resume-section mt-4" v-if="profileData.resumePath">
               <h5>Resume</h5>
               <a :href="`https://localhost:7269${profileData.resumePath}`" target="_blank" class="download-resume-btn">
-                <i class="bi bi-file-earmark-pdf-fill"></i> View / Download Resume
+                <i class="bi bi-file-earmark-pdf"></i> View / Download Resume
               </a>
             </div>
           </div>
           
-          <div v-else class="no-data-state">
-            <i class="bi bi-exclamation-circle text-warning fs-1 mb-2"></i>
+          <div v-else class="text-center py-4">
+            <i class="bi bi-person-x text-warning fs-1 mb-2"></i>
             <p>This user has not completed their profile yet.</p>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -146,14 +193,16 @@ import { getAllApplications, deleteCentralApplication, getUserProfileForAdmin } 
 export default {
   setup() {
     const applications = ref([])
+    const loading = ref(true)
+    const submitting = ref(false)
+
+    // Filters
+    const searchQuery = ref("")
     const searchCompany = ref("")
-    const loading = ref(false)
+    const searchJob = ref("")
 
-    // Delete Modal State
-    const showDeleteModal = ref(false)
+    // Modals
     const appToDelete = ref(null)
-
-    // Profile Modal State
     const showProfileModal = ref(false)
     const loadingProfile = ref(false)
     const selectedApp = ref(null)
@@ -170,44 +219,60 @@ export default {
       }
     }
 
-    // --- DELETE LOGIC ---
-    const openDeleteModal = (appId) => {
-      appToDelete.value = appId
-      showDeleteModal.value = true
+    const filteredApplications = computed(() => {
+      let filtered = applications.value
+
+      const qName = searchQuery.value.toLowerCase().trim()
+      if (qName) {
+        filtered = filtered.filter(a => a.fullName.toLowerCase().includes(qName))
+      }
+
+      const qCompany = searchCompany.value.toLowerCase().trim()
+      if (qCompany) {
+        filtered = filtered.filter(a => a.companyName?.toLowerCase().includes(qCompany))
+      }
+
+      const qJob = searchJob.value.toLowerCase().trim()
+      if (qJob) {
+        filtered = filtered.filter(a => a.jobTitle?.toLowerCase().includes(qJob))
+      }
+
+      return filtered
+    })
+
+    const resetFilters = () => {
+      searchQuery.value = ""
+      searchCompany.value = ""
+      searchJob.value = ""
     }
 
-    const closeDeleteModal = () => {
-      showDeleteModal.value = false
-      appToDelete.value = null
+    const openDeleteModal = (app) => {
+      appToDelete.value = app
     }
 
     const confirmDelete = async () => {
       if (!appToDelete.value) return
-
       try {
-        loading.value = true
-        await deleteCentralApplication(appToDelete.value)
-        applications.value = applications.value.filter(a => a.applicationId !== appToDelete.value)
-        closeDeleteModal()
+        submitting.value = true
+        await deleteCentralApplication(appToDelete.value.applicationId)
+        applications.value = applications.value.filter(a => a.applicationId !== appToDelete.value.applicationId)
+        appToDelete.value = null
       } catch (err) {
         alert("Error deleting application: " + err.message)
       } finally {
-        loading.value = false
+        submitting.value = false
       }
     }
 
-    // --- VIEW PROFILE LOGIC ---
     const openProfileModal = async (app) => {
       selectedApp.value = app
       showProfileModal.value = true
       profileData.value = null
-
       try {
         loadingProfile.value = true
-        // Fetch real profile data using the specific applicant's userId
         profileData.value = await getUserProfileForAdmin(app.userId)
       } catch (err) {
-        console.error("User profile empty or error fetching", err)
+        console.error("Profile not found or error", err)
       } finally {
         loadingProfile.value = false
       }
@@ -219,49 +284,35 @@ export default {
       profileData.value = null
     }
 
-    const filteredApplications = computed(() => {
-      if (!searchCompany.value.trim()) return applications.value
-      
-      const searchTerm = searchCompany.value.toLowerCase()
-      return applications.value.filter(app => 
-        app.companyName?.toLowerCase().includes(searchTerm)
-      )
-    })
-
     const formatDate = (dateString) => {
       if (!dateString) return ""
-      const date = new Date(dateString)
-      return date.toLocaleDateString(undefined, {
+      return new Date(dateString).toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
     }
 
-    onMounted(() => {
-      loadApplications()
-    })
+    onMounted(loadApplications)
 
     return {
       applications,
-      filteredApplications,
-      searchCompany,
       loading,
-      
-      // Delete Modal
-      showDeleteModal,
+      submitting,
+      searchQuery,
+      searchCompany,
+      searchJob,
+      filteredApplications,
+      resetFilters,
+      appToDelete,
       openDeleteModal,
-      closeDeleteModal,
       confirmDelete,
-
-      // Profile Modal
       showProfileModal,
       loadingProfile,
       selectedApp,
       profileData,
       openProfileModal,
       closeProfileModal,
-
       formatDate
     }
   }
@@ -275,58 +326,89 @@ export default {
   min-height: 100vh;
 }
 
-/* Header */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
+/* Header & Filters */
+.page-header-container {
   background: var(--bg-card);
-  padding: 20px 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
 
 .page-header h2 {
-  margin: 0;
   font-weight: 700;
+  margin: 0 0 24px 0;
   color: var(--text-primary);
-  font-size: 24px;
 }
 
-.search-input {
-  padding: 10px 16px;
+.filters-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-box, .filter-group {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-box i, .filter-group i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border-radius: 8px;
-  width: 250px;
+  background: var(--bg-main);
   font-size: 14px;
-  transition: all 0.2s;
+  color: var(--text-primary);
+  transition: 0.2s;
 }
 
-.search-input:focus {
+.filter-input:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Cards */
-.card-section {
-  background: var(--bg-card);
-  padding: 30px;
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-  margin-bottom: 25px;
-  border-top: 4px solid #8b5cf6; /* Distinct purple to separate from Jobs */
+.reset-btn {
+  background: #f1f5f9;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: #e2e8f0;
+  color: #3b82f6;
 }
 
 /* Table */
+.card-section {
+  background: var(--bg-card);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  border-top: 5px solid #ce0bf5ff;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+
 .table-wrapper {
   overflow-x: auto;
 }
@@ -337,25 +419,27 @@ export default {
 }
 
 .app-table th {
-  background: var(--recent-bg);
+  background: #f8fafc;
+  padding: 16px 24px;
   text-align: left;
-  padding: 14px 16px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 14px;
-  color: var(--text-muted);
-  border-bottom: 2px solid var(--recent-border);
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
 }
 
 .app-table td {
-  padding: 14px 16px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border);
+  vertical-align: middle;
   font-size: 14px;
   color: var(--text-primary);
-  vertical-align: middle;
 }
 
 .app-table tbody tr:hover {
-  background: var(--recent-bg);
+  background: #f1f5f933;
 }
 
 .fw {
@@ -364,58 +448,63 @@ export default {
 }
 
 .company-badge {
-  background: var(--recent-bg);
-  padding: 4px 8px;
-  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 12px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-muted);
   border: 1px solid var(--border);
 }
 
-.no-data {
-  text-align: center;
-  padding: 30px;
-  color: var(--text-muted);
-  font-style: italic;
+.action-buttons {
+  display: flex;
+  gap: 8px;
 }
 
-/* Buttons */
 .action-btn {
-  background: none;
   border: none;
-  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 6px;
-  padding: 6px 12px;
+  cursor: pointer;
   transition: all 0.2s;
-  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .view-btn {
-  color: #0284c7;
   background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .view-btn:hover {
-  background: #bae6fd;
+  background: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 .delete-btn {
+  background: #fff1f2;
   color: #e11d48;
-  background: #ffe4e6;
+  border: 1px solid #fecdd3;
 }
 
 .delete-btn:hover {
-  background: #fecdd3;
+  background: #e11d48;
+  color: white;
+  border-color: #e11d48;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2);
 }
 
-/* ================================= */
-/* MODALS */
-/* ================================= */
-
-.custom-modal-overlay {
+/* Modals */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -426,116 +515,104 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
 }
 
-.custom-modal {
+.modal-content {
   background: var(--bg-card);
   width: 90%;
-  max-width: 450px;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: modal-fade-in 0.3s ease-out forwards;
+  max-width: 600px;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  animation: modalSlide 0.3s ease-out;
 }
 
-.profile-modal {
-  max-width: 550px;
+.mini-modal {
+  max-width: 400px;
 }
 
-@keyframes modal-fade-in {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes modalSlide {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
-  padding: 20px 24px;
+  padding: 24px;
   border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--recent-bg);
 }
 
-.modal-header h3 {
+.modal-header h2, .modal-header h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
-.close-btn {
-  background: none;
+.close-modal-btn {
+  background: #f1f5f9;
   border: none;
-  font-size: 18px;
-  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: #64748b;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
   transition: all 0.2s;
-  display: flex;
 }
 
-.close-btn:hover {
-  background: var(--border);
-  color: var(--text-primary);
+.close-modal-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  transform: rotate(90deg);
 }
 
 .modal-body {
   padding: 24px;
-  font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.5;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  background: var(--bg-main);
+  padding: 20px 24px;
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
 
-/* Base Modal Buttons */
-.primary-btn, .secondary-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
+.secondary-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: #64748b;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+}
+
+.danger-btn {
+  padding: 10px 20px;
+  border-radius: 12px;
   border: none;
-}
-
-.secondary-btn {
-  background: var(--recent-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.secondary-btn:hover {
-  background: var(--border);
-}
-
-.delete-confirm-btn {
-  background: #e11d48;
+  background: #ef4444;
   color: white;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.delete-confirm-btn:hover {
-  background: #be123c;
+.warning-icon {
+  width: 60px;
+  height: 60px;
+  background: #fef2f2;
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 16px;
 }
 
-/* ================================= */
-/* PROFILE MODAL UI */
-/* ================================= */
-
-.loading-state, .no-data-state {
-  text-align: center;
-  padding: 40px 0;
-  color: var(--text-muted);
-}
-
+/* Profile UI */
 .profile-header-info {
   display: flex;
   align-items: center;
@@ -556,6 +633,9 @@ export default {
   margin: 0 0 4px 0;
   font-size: 14px;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .profile-details-grid {
@@ -567,67 +647,64 @@ export default {
 .detail-card {
   background: var(--bg-main);
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--border);
 }
 
 .detail-card h5 {
   margin: 0 0 8px 0;
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 12px;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .detail-card p {
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .highlight-text {
-  color: #0ea5e9 !important;
+  color: #3b82f6 !important;
   font-size: 18px;
-}
-
-.badges-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .skill-badge {
   background: var(--bg-main);
-  color: var(--text-primary);
-  padding: 6px 12px;
-  border-radius: 20px;
+  color: #2563eb;
+  padding: 6px 14px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 500;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  display: inline-block;
   border: 1px solid var(--border);
-}
-
-h5 {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: var(--text-primary);
 }
 
 .download-resume-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: #fef2f2;
   color: #ef4444;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
   text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition: 0.2s;
 }
 
 .download-resume-btn:hover {
   background: #fee2e2;
-  color: #dc2626;
+  transform: translateY(-2px);
+}
+
+.no-data {
+  text-align: center;
+  padding: 60px;
+  color: #94a3b8;
+  font-style: italic;
 }
 </style>

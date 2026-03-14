@@ -8,7 +8,13 @@
         <p class="text-muted small ms-3 mb-0">Manage and track your company's job listings.</p>
       </div>
       <div class="header-right">
-        <button class="primary-btn add-job-btn" @click="toggleAddJob" v-if="!showUpdateJob">
+        <button 
+          class="primary-btn add-job-btn" 
+          @click="toggleAddJob" 
+          v-if="!showUpdateJob"
+          :disabled="!isVerified"
+          :title="!isVerified ? 'Please verify your company to post jobs' : ''"
+        >
           <i class="bi bi-plus-circle-fill me-2"></i>
           {{ showAddJob ? "Cancel" : "Post New Job" }}
         </button>
@@ -16,6 +22,22 @@
           <i class="bi bi-x-circle-fill me-2"></i> Cancel Update
         </button>
       </div>
+    </div>
+
+    <!-- VERIFICATION WARNING -->
+    <div v-if="!isVerified && !loading" class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4 d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <div class="warning-icon me-3 bg-warning bg-opacity-10 p-3 rounded-circle text-warning">
+          <i class="bi bi-shield-lock-fill fs-4"></i>
+        </div>
+        <div>
+          <h5 class="fw-bold mb-1">Company Verification Required</h5>
+          <p class="mb-0 text-muted">You must complete your company verification before you can post new jobs or recruitment actions.</p>
+        </div>
+      </div>
+      <router-link to="/company/verification" class="btn btn-warning fw-bold px-4 rounded-pill">
+        Verify Now
+      </router-link>
     </div>
 
     <!-- ADD JOB SECTION -->
@@ -192,7 +214,9 @@ import { ref, onMounted } from "vue"
 import {
   getCompanyJobs,
   addCompanyJob,
-  updateCompanyJob
+  updateCompanyJob,
+  checkSession,
+  getSetupCompanies
 } from "@/services/api"
 import { useNotification } from "@/composables/useNotification"
 
@@ -202,6 +226,21 @@ const jobs = ref([])
 const loading = ref(false)
 const showAddJob = ref(false)
 const showUpdateJob = ref(false)
+const isVerified = ref(true) // Default to true until checked
+
+const fetchVerificationStatus = async () => {
+  try {
+    const userData = await checkSession();
+    const companyId = userData.companyId;
+    if (companyId) {
+      const companies = await getSetupCompanies();
+      const current = companies.find(c => c.companyId === companyId);
+      isVerified.value = current?.isCompanyVerified || false;
+    }
+  } catch (err) {
+    console.error("Verification check failed", err);
+  }
+}
 
 const newJob = ref({
   title: "",
@@ -318,7 +357,10 @@ const saveUpdateJob = async () => {
   }
 }
 
-onMounted(loadJobs)
+onMounted(async () => {
+  await fetchVerificationStatus();
+  await loadJobs();
+})
 </script>
 
 <style scoped>
@@ -463,12 +505,17 @@ input:focus, textarea:focus, select:focus {
 }
 
 .edit-btn {
-  background: #eff6ff;
-  color: #2563eb;
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 .edit-btn:hover {
-  background: #dbeafe;
+  background: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 .bg-success-soft {

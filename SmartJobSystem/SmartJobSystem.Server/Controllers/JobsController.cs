@@ -28,6 +28,11 @@ namespace SmartJobSystem.Server.Controllers
             using var con = _db.GetConnection();
             con.Open();
 
+            // ✅ Check if user is placed globally
+            var isPlacedCmd = new SqlCommand("SELECT COUNT(*) FROM Applications WHERE UserId=@uid AND ApplicationStatus='Placed'", con);
+            isPlacedCmd.Parameters.AddWithValue("@uid", userId.Value);
+            bool isPlaced = (int)isPlacedCmd.ExecuteScalar() > 0;
+
             var cmd = new SqlCommand(@"
                 SELECT 
                     j.JobId,
@@ -83,7 +88,7 @@ namespace SmartJobSystem.Server.Controllers
                 });
             }
 
-            return Ok(jobs);
+            return Ok(new { jobs, isPlaced });
         }
     }
 }

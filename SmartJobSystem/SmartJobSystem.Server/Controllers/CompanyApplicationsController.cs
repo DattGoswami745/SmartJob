@@ -175,5 +175,27 @@ namespace SmartJobSystem.Server.Controllers
 
             return Ok(profile);
         }
+
+        [HttpPost("mark-placed/{appId}")]
+        public async Task<IActionResult> MarkPlaced(int appId)
+        {
+            int? companyId = HttpContext.Session.GetInt32("CompanyId");
+            string? role = HttpContext.Session.GetString("Role");
+
+            if (role != "Company" || companyId == null)
+                return Unauthorized("Only company recruiters can perform this action.");
+
+            // 🔍 Verification Check
+            if (!await _db.IsCompanyVerifiedAsync(companyId.Value))
+            {
+                return BadRequest("Company verification pending. Please upload required documents and wait for admin approval.");
+            }
+
+            bool success = await _db.MarkApplicationAsPlacedAsync(companyId.Value, appId);
+            if (!success)
+                return NotFound(new { message = "Application not found or does not belong to your company." });
+
+            return Ok(new { message = "Candidate marked as Placed successfully!" });
+        }
     }
 }

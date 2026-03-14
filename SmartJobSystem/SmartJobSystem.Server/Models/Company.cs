@@ -1,3 +1,5 @@
+using System;
+
 namespace SmartJobSystem.Server.Models
 {
     public class Company
@@ -7,5 +9,6 @@ namespace SmartJobSystem.Server.Models
         public string Industry { get; set; }
         public string Location { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool IsCompanyVerified { get; set; }
     }
 }

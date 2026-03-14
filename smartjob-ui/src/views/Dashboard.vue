@@ -150,7 +150,8 @@
                   class="btn custom-apply-btn"
                   :class="{
                     'btn-applied': job.applied && !isUserPlaced && job.applicationStatus !== 'Placed', 
-                    'btn-success': job.applicationStatus === 'Placed' || isUserPlaced,
+                    'btn-success': job.applicationStatus === 'Placed',
+                    'btn-disabled-faded': isUserPlaced && job.applicationStatus !== 'Placed',
                     'btn-primary-gradient': !job.applied && !isUserPlaced
                   }"
                   :disabled="job.applied || isUserPlaced"
@@ -214,13 +215,40 @@
         </div>
       </div>
     </div>
+
+    <!-- CONGRATULATIONS POPUP -->
+    <div v-if="showCongratulations" class="profile-reminder-overlay">
+      <div class="profile-reminder-content text-center congratulation-card">
+        <div class="confetti-container">
+          <div class="congs-icon mx-auto mb-3 pulse-animation">
+            <Trophy class="text-warning" size="64" />
+          </div>
+        </div>
+        <h2 class="fw-bold gradient-text mb-2">Congratulations!</h2>
+        <h4 class="fw-bold text-main mb-3">You've Been Placed!</h4>
+        <p class="text-muted mb-4 px-3">
+          Awesome news! You have been officially selected for the <strong>{{ placedJobTitle }}</strong> position. 
+          The company will reach out to you soon for the next steps.
+        </p>
+
+        <div class="success-features mb-4 p-3 bg-light rounded-4">
+          <div class="d-flex align-items-center gap-2 justify-content-center text-success fw-bold">
+            <Zap size="20" /> Start your new career journey today!
+          </div>
+        </div>
+
+        <button @click="closeCongratulations" class="btn btn-primary-gradient w-100 py-3 rounded-pill fw-bold shadow-sm">
+          Got it, Thanks!
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { getJobs, getDashboardData, applyJob } from "../services/api"
-import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck } from "lucide-vue-next"
+import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck, Trophy } from "lucide-vue-next"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
@@ -236,6 +264,8 @@ const stats = ref({
 })
 
 const showProfileReminder = ref(false)
+const showCongratulations = ref(false)
+const placedJobTitle = ref("")
 
 /* FILTERS */
 const filters = ref({
@@ -246,7 +276,7 @@ const filters = ref({
 
 /* COMPUTED IS PLACED */
 const isUserPlaced = computed(() => {
-  return jobs.value.some(job => job.applicationStatus === 'Placed')
+  return stats.value.isPlaced === true
 })
 
 /* COMPUTED FILTERED JOBS */
@@ -281,8 +311,24 @@ onMounted(async () => {
     stats.value = data
     jobs.value = await getJobs()
 
+    // 🏆 Check for Placement Success
+    const isPlaced = data.isPlaced || false
+    if (isPlaced) {
+      // Find the placed job in the list to getting its title
+      const placedJob = jobs.value.find(j => j.applicationStatus === 'Placed')
+      if (placedJob) {
+        placedJobTitle.value = placedJob.title
+        const hasShown = localStorage.getItem(`congs_shown_${placedJob.jobId}`)
+        if (!hasShown) {
+          setTimeout(() => {
+            showCongratulations.value = true
+          }, 1500)
+        }
+      }
+    }
+
     // Show reminder if profile is incomplete
-    if (!data.isProfileComplete) {
+    if (!data.isProfileComplete && !placedJob) {
       setTimeout(() => {
         showProfileReminder.value = true
       }, 1000)
@@ -299,6 +345,14 @@ function goToProfile() {
 
 function dismissReminder() {
   showProfileReminder.value = false
+}
+
+function closeCongratulations() {
+  showCongratulations.value = false
+  const placedJob = jobs.value.find(j => j.applicationStatus === 'Placed')
+  if (placedJob) {
+    localStorage.setItem(`congs_shown_${placedJob.jobId}`, "true")
+  }
 }
 
 /* APPLY JOB */
@@ -519,20 +573,56 @@ function isClosingSoon(dateStr) {
   padding: 8px 20px;
   font-weight: 600;
   font-size: 0.875rem;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
 }
 
 .btn-primary-gradient {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary-gradient:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-  color: white;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  filter: brightness(1.1);
+}
+
+.btn-applied {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  opacity: 1 !important;
+  cursor: default;
+}
+
+.btn-disabled-faded {
+  background: #dcfce7 !important; /* Light Green background */
+  color: #10b981 !important; /* Green text */
+  border: 1px solid #a7f3d0 !important;
+  opacity: 0.6 !important;
+  cursor: not-allowed !important; /* Stop sign cursor */
+}
+
+.btn-success {
+  background: #22c55e !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+.btn-disabled-faded {
+  background: #dcfce7 !important; /* Light Green background */
+  color: #10b981 !important; /* Green text */
+  border: 1px solid #a7f3d0 !important;
+  opacity: 0.6 !important;
+  cursor: not-allowed !important; /* Stop sign cursor */
+}
+
+.btn-success {
+  background: #22c55e !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
 }
 
 /* Profile Reminder Overlay */

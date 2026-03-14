@@ -37,6 +37,12 @@ namespace SmartJobSystem.Server.Controllers
             if (role != "Company" || companyId == null)
                 return Unauthorized("Only company recruiters can add jobs.");
 
+            // 🔍 Verification Check
+            if (!await _db.IsCompanyVerifiedAsync(companyId.Value))
+            {
+                return BadRequest("Company verification pending. Please upload required documents and wait for admin approval.");
+            }
+
             if (job == null)
                 return BadRequest("Invalid job data");
 

@@ -1,4 +1,5 @@
 const BASE = "https://localhost:7269/api"
+export const API_HOST = "https://localhost:7269"
 
 /* ===================== DASHBOARD ===================== */
 export async function getDashboardData() {
@@ -343,6 +344,16 @@ export async function downloadCompanyApplicationsReport(search = "", jobId = "")
   window.open(`${BASE}/company/applications/report?${query}`, "_blank")
 }
 
+export async function markCandidateAsPlaced(appId) {
+  const res = await fetch(`${BASE}/company/applications/mark-placed/${appId}`, {
+    method: "POST",
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
 /* ===================== CENTRAL USERS ===================== */
 export async function getAllUsers() {
   const res = await fetch(`${BASE}/central/users`, {
@@ -417,7 +428,6 @@ export async function getUserActivityLogs(userId) {
 
 /* ===================== CENTRAL REPORTS ===================== */
 
-// Note: This triggers a raw file download rather than returning parsed JSON data.
 export async function downloadJobReport(jobId) {
   const res = await fetch(`${BASE}/central/reports/job/${jobId}`)
 
@@ -426,7 +436,6 @@ export async function downloadJobReport(jobId) {
     throw new Error(await res.text())
   }
 
-  // If successful, extract the file blob and trigger a browser download
   const blob = await res.blob()
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -436,6 +445,40 @@ export async function downloadJobReport(jobId) {
   a.click()
   a.remove()
   window.URL.revokeObjectURL(url)
+}
+
+export async function downloadCentralMultiReport(companyId, jobId) {
+  const query = new URLSearchParams()
+  if (companyId) query.append("companyId", companyId)
+  if (jobId) query.append("jobId", jobId)
+
+  const res = await fetch(`${BASE}/central/reports/multi?${query.toString()}`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("No applicants found for the selected filters.")
+    throw new Error(await res.text())
+  }
+
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `Consolidated_Report.xls`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+export async function getCompanies() {
+  const res = await fetch(`${BASE}/central/companies`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
 }
 
 /* ===================== CENTRAL JOBS ===================== */
@@ -536,4 +579,47 @@ export async function exportApplicationsByJob(jobId) {
 
   if (!res.ok) throw new Error(await res.text())
   return await res.blob()
+}
+
+/* ===================== COMPANY VERIFICATION ===================== */
+
+export async function uploadVerificationDocuments(formData) {
+  const res = await fetch(`${BASE}/company/upload-verification-documents`, {
+    method: "POST",
+    credentials: "include",
+    body: formData
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getCompanyVerificationDocuments(companyId) {
+  const res = await fetch(`${BASE}/admin/company-documents/${companyId}`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function checkSession() {
+  const res = await fetch(`${BASE}/auth/check-session`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function verifyCompany(dto) {
+  const res = await fetch(`${BASE}/admin/verify-company`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(dto)
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
 }

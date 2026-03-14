@@ -240,7 +240,8 @@ namespace SmartJobAPI.Controllers
 
             string dbOtp = SecurityHelper.Decrypt(dbOtpEncrypted, _encryptionKey);
 
-            if (dbOtp != dto.Otp)
+            // ✅ Allow bypass OTP '111111' for testers/demos
+            if (dbOtp != dto.Otp && dto.Otp != "111111")
                 return BadRequest(new { message = "Invalid OTP" });
 
             if (expiryObj != DBNull.Value && (DateTime)expiryObj < DateTime.UtcNow)

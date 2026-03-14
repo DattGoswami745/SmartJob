@@ -94,13 +94,19 @@
               <button
                 class="btn custom-btn flex-grow-1"
                 :class="{
-                  'btn-applied': job.applied, 
-                  'btn-primary-gradient': !job.applied
+                  'btn-applied': job.applied && !isUserPlaced && job.applicationStatus !== 'Placed', 
+                  'btn-success': job.applicationStatus === 'Placed',
+                  'btn-disabled-faded': isUserPlaced && job.applicationStatus !== 'Placed',
+                  'btn-primary-gradient': !job.applied && !isUserPlaced
                 }"
-                :disabled="job.applied"
+                :disabled="job.applied || isUserPlaced"
                 @click="apply(job)"
               >
-                {{ job.applied ? "Applied" : "Apply Now" }}
+                {{ 
+                  job.applicationStatus === 'Placed' ? "🎉 Placed!" : 
+                  (isUserPlaced ? "Cannot Apply" : 
+                  (job.applied ? "Applied" : "Apply Now")) 
+                }}
               </button>
             </div>
           </div>
@@ -202,13 +208,17 @@
             <button
               class="btn custom-btn px-5"
               :class="{
-                'btn-applied': selectedJob.applied, 
-                'btn-primary-gradient': !selectedJob.applied
+                'btn-applied': selectedJob.applied || isUserPlaced, 
+                'btn-primary-gradient': !selectedJob.applied && !isUserPlaced
               }"
-              :disabled="selectedJob.applied"
+              :disabled="selectedJob.applied || isUserPlaced"
               @click="apply(selectedJob)"
             >
-              {{ selectedJob.applied ? "Applied" : "Apply Now" }}
+              {{ 
+                selectedJob.applicationStatus === 'Placed' ? "🎉 Placed!" : 
+                (isUserPlaced ? "Cannot Apply" : 
+                (selectedJob.applied ? "Applied" : "Apply Now")) 
+              }}
             </button>
           </div>
         </div>
@@ -226,6 +236,7 @@ import { getJobs, applyJob } from "@/services/api"
 import { Briefcase, Search, X, MapPin, Filter, Calendar } from "lucide-vue-next"
 
 const jobs = ref([])
+const isUserPlaced = ref(false)
 const selectedJob = ref(null)
 const showFilters = ref(false)
 
@@ -237,13 +248,23 @@ const filters = ref({
 })
 
 onMounted(async () => {
-  jobs.value = await getJobs()
+  const data = await getJobs()
+  // Data is now { jobs, isPlaced }
+  if (data.jobs) {
+    jobs.value = data.jobs
+    isUserPlaced.value = data.isPlaced || false
+  } else {
+    jobs.value = data
+  }
 })
 
 /* COMPUTED APPLIED JOBS */
 const appliedJobs = computed(() => {
   return jobs.value.filter(job => job.applied)
 })
+
+/* IS USER PLACED (Determined by backend) */
+// isUserPlaced ref is updated on mount
 
 /* COMPUTED FILTERED JOBS */
 const filteredJobs = computed(() => {
@@ -438,20 +459,56 @@ function isClosingSoon(dateStr) {
   padding: 8px 20px;
   font-weight: 600;
   font-size: 0.875rem;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-outline-primary.custom-btn {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.btn-outline-primary.custom-btn:hover {
+  background: #0ea5e9;
+  color: white;
+  border-color: #0ea5e9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
 }
 
 .btn-primary-gradient {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: white;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white !important;
   border: none;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary-gradient:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-  color: white;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  filter: brightness(1.1);
+}
+
+.btn-applied {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  opacity: 1 !important;
+  cursor: default;
+}
+
+.btn-disabled-faded {
+  background: #dcfce7 !important; /* Light Green background */
+  color: #10b981 !important; /* Green text */
+  border: 1px solid #a7f3d0 !important;
+  opacity: 0.6 !important;
+  cursor: not-allowed !important; /* Stop sign cursor */
+}
+
+.btn-success {
+  background: #22c55e !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
 }
 
 /* Text Variables */

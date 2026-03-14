@@ -23,6 +23,15 @@ public class ApplicationsController : ControllerBase
         using var con = _db.GetConnection();
         con.Open();
 
+        // 🛑 PREVENT APPLY IF ALREADY PLACED
+        var placementCheck = new SqlCommand(
+            "SELECT COUNT(*) FROM Applications WHERE UserId=@uid AND ApplicationStatus='Placed'",
+            con
+        );
+        placementCheck.Parameters.AddWithValue("@uid", userId.Value);
+        if ((int)placementCheck.ExecuteScalar() > 0)
+            return BadRequest(new { message = "You have already been placed and cannot apply for more jobs." });
+
         // Prevent duplicate apply
         var check = new SqlCommand(
             "SELECT COUNT(*) FROM Applications WHERE JobId=@jid AND UserId=@uid",
