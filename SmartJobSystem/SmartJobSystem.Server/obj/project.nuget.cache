@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "8v/qpny2DtE=",
+  "dgSpecHash": "3Z9lz34Bdf4=",
   "success": true,
   "projectFilePath": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj",
   "expectedPackageFiles": [
@@ -20,7 +20,7 @@
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\itext7\\9.5.0\\itext7.9.5.0.nupkg.sha512",
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\itext7.bouncy-castle-adapter\\9.5.0\\itext7.bouncy-castle-adapter.9.5.0.nupkg.sha512",
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\itext7.pdfhtml\\6.3.1\\itext7.pdfhtml.6.3.1.nupkg.sha512",
-    "C:\\Users\\Datt Goswami\\.nuget\\packages\\microsoft.aspnetcore.spaproxy\\8.0.24\\microsoft.aspnetcore.spaproxy.8.0.24.nupkg.sha512",
+    "C:\\Users\\Datt Goswami\\.nuget\\packages\\microsoft.aspnetcore.spaproxy\\8.0.25\\microsoft.aspnetcore.spaproxy.8.0.25.nupkg.sha512",
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\8.0.0\\microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512",
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\microsoft.csharp\\4.0.1\\microsoft.csharp.4.0.1.nupkg.sha512",
     "C:\\Users\\Datt Goswami\\.nuget\\packages\\microsoft.data.sqlclient\\6.1.4\\microsoft.data.sqlclient.6.1.4.nupkg.sha512",

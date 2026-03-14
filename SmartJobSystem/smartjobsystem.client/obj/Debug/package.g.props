@@ -9,6 +9,7 @@
     <PackageJsonScriptsBuild Condition="$(PackageJsonScriptsBuild) == ''">vite build</PackageJsonScriptsBuild>
     <PackageJsonScriptsPreview Condition="$(PackageJsonScriptsPreview) == ''">vite preview</PackageJsonScriptsPreview>
     <PackageJsonScriptsLint Condition="$(PackageJsonScriptsLint) == ''">eslint . --fix --cache</PackageJsonScriptsLint>
+    <PackageJsonDependenciesBootstrap Condition="$(PackageJsonDependenciesBootstrap) == ''">^5.3.8</PackageJsonDependenciesBootstrap>
     <PackageJsonDependenciesVue Condition="$(PackageJsonDependenciesVue) == ''">^3.5.26</PackageJsonDependenciesVue>
     <PackageJsonDevdependenciesEslintJs Condition="$(PackageJsonDevdependenciesEslintJs) == ''">^9.39.2</PackageJsonDevdependenciesEslintJs>
     <PackageJsonDevdependenciesVitejsPluginVue Condition="$(PackageJsonDevdependenciesVitejsPluginVue) == ''">^6.0.3</PackageJsonDevdependenciesVitejsPluginVue>

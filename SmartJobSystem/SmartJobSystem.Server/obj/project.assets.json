@@ -312,7 +312,7 @@
           "itext.pdfhtml": "6.3.1"
         }
       },
-      "Microsoft.AspNetCore.SpaProxy/8.0.24": {
+      "Microsoft.AspNetCore.SpaProxy/8.0.25": {
         "type": "package",
         "compile": {
           "lib/net8.0/Microsoft.AspNetCore.SpaProxy.dll": {}
@@ -3095,10 +3095,10 @@
         "itext7.pdfhtml.nuspec"
       ]
     },
-    "Microsoft.AspNetCore.SpaProxy/8.0.24": {
-      "sha512": "Rp0r2Ie9zd8k+TYV10TYDGxu+fLoQoOtd8lRyRvaM/SK2BqqtG0k5JewmUJsYXu6jy5mXc9vuNydQb5AjFrz1g==",
+    "Microsoft.AspNetCore.SpaProxy/8.0.25": {
+      "sha512": "jDv9gydWXVRAMtphfpBJloNDwUED8t01RJEs2HSpguv+6an/VdXllo7FRMkbvHdyL7I3J2hmbEQBg/XIrtZGWA==",
       "type": "package",
-      "path": "microsoft.aspnetcore.spaproxy/8.0.24",
+      "path": "microsoft.aspnetcore.spaproxy/8.0.25",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3106,7 +3106,7 @@
         "THIRD-PARTY-NOTICES.TXT",
         "build/Microsoft.AspNetCore.SpaProxy.targets",
         "lib/net8.0/Microsoft.AspNetCore.SpaProxy.dll",
-        "microsoft.aspnetcore.spaproxy.8.0.24.nupkg.sha512",
+        "microsoft.aspnetcore.spaproxy.8.0.25.nupkg.sha512",
         "microsoft.aspnetcore.spaproxy.nuspec"
       ]
     },
@@ -8533,6 +8533,7 @@
       },
       "frameworks": {
         "net8.0": {
+          "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {}
         }
@@ -8547,10 +8548,11 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net8.0": {
+        "framework": "net8.0",
         "targetAlias": "net8.0",
         "dependencies": {
           "DinkToPdf": {
@@ -8613,7 +8615,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
