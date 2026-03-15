@@ -59,7 +59,7 @@ const menu = [
   { name: "Verification", path: "/company/verification", icon: ShieldCheck },
   { name: "Posted Jobs", path: "/company/jobs", icon: Briefcase },
   { name: "Applications", path: "/company/applications", icon: ClipboardList },
-  { name: "Reports", path: "/company/reports", icon: FileBarChart },
+  { name: "Dynamic Reports", path: "/company/report-viewer", icon: FileBarChart },
   { name: "Placements", path: "/company/placements", icon: Trophy },
 ];
 

@@ -179,7 +179,12 @@
           <div class="detail-group">
             <label>Required Skills</label>
             <div class="skills-list">
-              <span v-for="skill in selectedJob.requiredSkills?.split(',')" :key="skill" class="skill-tag">
+              <span 
+                v-for="(skill, index) in (selectedJob.requiredSkills || '').split(',')" 
+                :key="index"
+                class="badge rounded-pill skill-tag"
+                :class="'tag-color-' + (index % 5)"
+              >
                 {{ skill.trim() }}
               </span>
             </div>
@@ -888,13 +893,17 @@ export default {
 }
 
 .skill-tag {
-  background: #e0f2fe;
-  color: #0369a1;
   padding: 4px 12px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
+  border: 1px solid transparent;
 }
+.tag-color-0 { background: rgba(59, 130, 246, 0.1); color: #2563eb; border-color: rgba(59, 130, 246, 0.2); }
+.tag-color-1 { background: rgba(16, 185, 129, 0.1); color: #059669; border-color: rgba(16, 185, 129, 0.2); }
+.tag-color-2 { background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2); }
+.tag-color-3 { background: rgba(139, 92, 246, 0.1); color: #7c3aed; border-color: rgba(139, 92, 246, 0.2); }
+.tag-color-4 { background: rgba(236, 72, 153, 0.1); color: #db2777; border-color: rgba(236, 72, 153, 0.2); }
 
 .modal-footer {
   padding: 20px 30px;

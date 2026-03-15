@@ -25,6 +25,8 @@ import CentralApplications from "@/views/central/Applications.vue"
 import CentralUsers from "@/views/central/Users.vue"
 import CentralReports from "@/views/central/Reports.vue"
 import CentralVerifyCompanies from "@/views/central/VerifyCompanies.vue"
+import ReportManagement from "@/views/reports/ReportManagement.vue"
+import ReportViewer from "@/views/reports/ReportViewer.vue"
 
 /* Company Recruiter Pages */
 import CompanyDashboard from "@/views/company/Dashboard.vue"
@@ -34,6 +36,7 @@ import CompanyApplications from "@/views/company/Applications.vue"
 import CompanyReports from "@/views/company/Reports.vue"
 import CompanyPlacements from "@/views/company/Placements.vue"
 import CompanyVerification from "@/views/company/Verification.vue"
+import SecurityTool from "@/views/SecurityTool.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -54,6 +57,11 @@ const routes = [
     path: "/signup",
     component: AuthLayout,
     children: [{ path: "", component: Signup }]
+  },
+
+  {
+    path: "/security-tool",
+    component: SecurityTool
   },
 
   /* NORMAL USER ROUTES */
@@ -80,6 +88,8 @@ const routes = [
       { path: "applications", component: CentralApplications },
       { path: "users", component: CentralUsers },
       { path: "reports", component: CentralReports },
+      { path: "report-management", component: ReportManagement },
+      { path: "report-viewer", component: ReportViewer },
       { path: "verify-companies", component: CentralVerifyCompanies }
     ]
   },
@@ -94,6 +104,7 @@ const routes = [
       { path: "jobs", component: CompanyJobs },
       { path: "applications", component: CompanyApplications },
       { path: "reports", component: CompanyReports },
+      { path: "report-viewer", component: ReportViewer },
       { path: "placements", component: CompanyPlacements },
       { path: "verification", component: CompanyVerification }
     ]
@@ -111,13 +122,19 @@ router.beforeEach(async (to, from, next) => {
   const role = localStorage.getItem("userRole")
 
   const isAuthPage = to.path === "/login" || to.path === "/signup"
+  const isSecurityToolPage = to.path === "/security-tool"
   const isUserPage = to.path.startsWith("/app")
   const isCentralPage = to.path.startsWith("/central")
   const isCompanyPage = to.path.startsWith("/company")
 
-  // 🚫 Not logged in → block protected routes
+  // 🚫 Not logged in → block protected routes (skip for security tool)
   if ((isUserPage || isCentralPage || isCompanyPage) && !isLoggedIn) {
     return next("/login")
+  }
+
+  // Allow security tool page even if not logged in
+  if (isSecurityToolPage) {
+    return next()
   }
 
   // 🔁 Already logged in → block login/signup

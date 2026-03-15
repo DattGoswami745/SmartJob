@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SmartJobSystem.Server.Data;
 
@@ -100,13 +100,16 @@ public class DashboardController : ControllerBase
             ? 0
             : ((double)totalMatchedSkills / totalRequiredSkills) * 100;
 
+        var isPlacedCmd = new SqlCommand("SELECT COUNT(*) FROM Applications WHERE UserId=@uid AND ApplicationStatus='Placed'", con);
+        isPlacedCmd.Parameters.AddWithValue("@uid", userId.Value);
+
         return Ok(new
         {
             totalJobs = totalJobs,
             appliedJobs = appliedJobs,
             skillMatch = Math.Round(finalMatch, 2),
             isProfileComplete = isProfileComplete,
-            isPlaced = (int)new SqlCommand("SELECT COUNT(*) FROM Applications WHERE UserId=@uid AND ApplicationStatus='Placed'", con).ExecuteScalar() > 0
+            isPlaced = (int)isPlacedCmd.ExecuteScalar() > 0
         });
     }
 

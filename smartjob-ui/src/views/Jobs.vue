@@ -80,7 +80,18 @@
             <p class="small text-muted mb-2 line-clamp-2">{{ job.description }}</p>
 
             <div class="w-100 mt-2 flex-grow-1">
-              <p class="small mb-2"><strong class="text-main">Requirements:</strong> <span class="badge bg-primary-subtle text-primary fw-medium rounded-pill">{{ job.requiredSkills }}</span></p>
+              <p class="small mb-2"><strong class="text-main d-block mb-1">Requirements:</strong> 
+                <div class="d-flex flex-wrap gap-1">
+                  <span 
+                    v-for="(skill, index) in (job.requiredSkills || '').split(',')" 
+                    :key="index"
+                    class="badge rounded-pill skill-tag"
+                    :class="'tag-color-' + (index % 5)"
+                  >
+                    {{ skill.trim() }}
+                  </span>
+                </div>
+              </p>
             </div>
 
             <div class="d-flex gap-2 w-100 mt-2 pt-3 border-top border-light">
@@ -600,6 +611,19 @@ function isClosingSoon(dateStr) {
   justify-content: center;
   animation: scale-up 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+/* Colorful Skill Tags */
+.skill-tag {
+  padding: 4px 10px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  border: 1px solid transparent;
+}
+.tag-color-0 { background: rgba(59, 130, 246, 0.1); color: #2563eb; border-color: rgba(59, 130, 246, 0.2); }
+.tag-color-1 { background: rgba(16, 185, 129, 0.1); color: #059669; border-color: rgba(16, 185, 129, 0.2); }
+.tag-color-2 { background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2); }
+.tag-color-3 { background: rgba(139, 92, 246, 0.1); color: #7c3aed; border-color: rgba(139, 92, 246, 0.2); }
+.tag-color-4 { background: rgba(236, 72, 153, 0.1); color: #db2777; border-color: rgba(236, 72, 153, 0.2); }
 
 @keyframes scale-up {
   0% { transform: scale(0); opacity: 0; }

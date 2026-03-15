@@ -135,7 +135,16 @@
                 </div>
               </td>
               <td>
-                <span class="badge bg-secondary-subtle text-secondary fw-medium rounded-pill">{{ job.requiredSkills }}</span>
+                <div class="d-flex flex-wrap gap-1">
+                  <span 
+                    v-for="(skill, index) in (job.requiredSkills || '').split(',')" 
+                    :key="index"
+                    class="badge rounded-pill skill-tag"
+                    :class="'tag-color-' + (index % 5)"
+                  >
+                    {{ skill.trim() }}
+                  </span>
+                </div>
               </td>
               <td><span class="text-main fw-medium">{{ job.jobType }}</span></td>
               <td><span class="text-success fw-semibold">{{ job.salaryRange }}</span></td>
@@ -309,7 +318,8 @@ onMounted(async () => {
   try {
     const data = await getDashboardData()
     stats.value = data
-    jobs.value = await getJobs()
+    const jobsRes = await getJobs()
+    jobs.value = (Array.isArray(jobsRes) ? jobsRes : jobsRes.jobs) || []
 
     // 🏆 Check for Placement Success
     const isPlaced = data.isPlaced || false
@@ -701,4 +711,17 @@ function isClosingSoon(dateStr) {
   color: #3b82f6;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
+
+/* Colorful Skill Tags */
+.skill-tag {
+  padding: 4px 10px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  border: 1px solid transparent;
+}
+.tag-color-0 { background: rgba(59, 130, 246, 0.1); color: #2563eb; border-color: rgba(59, 130, 246, 0.2); }
+.tag-color-1 { background: rgba(16, 185, 129, 0.1); color: #059669; border-color: rgba(16, 185, 129, 0.2); }
+.tag-color-2 { background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2); }
+.tag-color-3 { background: rgba(139, 92, 246, 0.1); color: #7c3aed; border-color: rgba(139, 92, 246, 0.2); }
+.tag-color-4 { background: rgba(236, 72, 153, 0.1); color: #db2777; border-color: rgba(236, 72, 153, 0.2); }
 </style>

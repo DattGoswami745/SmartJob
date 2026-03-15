@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using SmartJobSystem.Server.Models;
 using System.Data;
 
@@ -994,5 +994,139 @@ namespace SmartJobSystem.Server.Data
             var result = await cmd.ExecuteScalarAsync();
             return result != null && Convert.ToBoolean(result);
         }
+        /* ===================== DYNAMIC REPORTS ===================== */
+
+        public async Task<List<ReportConfiguration>> GetReportConfigurationsAsync()
+        {
+            var reports = new List<ReportConfiguration>();
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("SELECT * FROM ReportConfigurations WHERE IsActive = 1 ORDER BY CreatedAt DESC", con);
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                reports.Add(new ReportConfiguration
+                {
+                    ReportId = reader.GetInt32(0),
+                    ReportName = reader.GetString(1),
+                    Description = reader.IsDBNull(2) ? null : reader.GetString(2),
+                    BaseTable = reader.GetString(3),
+                    SelectedFields = reader.GetString(4),
+                    Filters = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    IsActive = reader.GetBoolean(6),
+                    CreatedBy = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
+                    CreatedAt = reader.GetDateTime(8),
+                    UpdatedAt = reader.GetDateTime(9)
+                });
+            }
+            return reports;
+        }
+
+        public async Task<ReportConfiguration?> GetReportConfigurationByIdAsync(int reportId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("SELECT * FROM ReportConfigurations WHERE ReportId = @Id", con);
+            cmd.Parameters.AddWithValue("@Id", reportId);
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new ReportConfiguration
+                {
+                    ReportId = reader.GetInt32(0),
+                    ReportName = reader.GetString(1),
+                    Description = reader.IsDBNull(2) ? null : reader.GetString(2),
+                    BaseTable = reader.GetString(3),
+                    SelectedFields = reader.GetString(4),
+                    Filters = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    IsActive = reader.GetBoolean(6),
+                    CreatedBy = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
+                    CreatedAt = reader.GetDateTime(8),
+                    UpdatedAt = reader.GetDateTime(9)
+                };
+            }
+            return null;
+        }
+
+        public async Task<int> AddReportConfigurationAsync(ReportConfiguration config)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO ReportConfigurations (ReportName, Description, BaseTable, SelectedFields, Filters, CreatedBy)
+                VALUES (@Name, @Desc, @Table, @Fields, @Filters, @UserId);
+                SELECT SCOPE_IDENTITY();", con);
+            cmd.Parameters.AddWithValue("@Name", config.ReportName);
+            cmd.Parameters.AddWithValue("@Desc", (object)config.Description ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Table", config.BaseTable);
+            cmd.Parameters.AddWithValue("@Fields", config.SelectedFields);
+            cmd.Parameters.AddWithValue("@Filters", (object)config.Filters ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@UserId", (object)config.CreatedBy ?? DBNull.Value);
+            await con.OpenAsync();
+            return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        }
+
+        public async Task<bool> UpdateReportConfigurationAsync(ReportConfiguration config)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                UPDATE ReportConfigurations 
+                SET ReportName = @Name, Description = @Desc, SelectedFields = @Fields, Filters = @Filters, UpdatedAt = GETUTCDATE()
+                WHERE ReportId = @Id", con);
+            cmd.Parameters.AddWithValue("@Id", config.ReportId);
+            cmd.Parameters.AddWithValue("@Name", config.ReportName);
+            cmd.Parameters.AddWithValue("@Desc", (object)config.Description ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Fields", config.SelectedFields);
+            cmd.Parameters.AddWithValue("@Filters", (object)config.Filters ?? DBNull.Value);
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
+        public async Task<List<IDictionary<string, object>>> GetDynamicReportDataAsync(string baseTable, string[] selectedFields, string? filterClause, Dictionary<string, object> parameters)
+        {
+            var data = new List<IDictionary<string, object>>();
+            using var con = GetConnection();
+            
+            // Basic validation to prevent SQL injection for table and column names
+            // In a production app, we should use a whitelist of allowed tables and columns
+            string columns = string.Join(", ", selectedFields);
+            string sql = $"SELECT {columns} FROM {baseTable}";
+            if (!string.IsNullOrEmpty(filterClause))
+            {
+                sql += $" WHERE {filterClause}";
+            }
+
+            using var cmd = new SqlCommand(sql, con);
+            foreach (var param in parameters)
+            {
+                cmd.Parameters.AddWithValue(param.Key, param.Value);
+            }
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var row = new Dictionary<string, object>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                }
+                data.Add(row);
+            }
+            return data;
+        }
+
+        public async Task LogReportGenerationAsync(ReportGenerationLog log)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                INSERT INTO ReportGenerationLogs (ReportId, UserId, Format, FilterValues)
+                VALUES (@ReportId, @UserId, @Format, @FilterValues)", con);
+            cmd.Parameters.AddWithValue("@ReportId", log.ReportId);
+            cmd.Parameters.AddWithValue("@UserId", log.UserId);
+            cmd.Parameters.AddWithValue("@Format", log.Format);
+            cmd.Parameters.AddWithValue("@FilterValues", (object)log.FilterValues ?? DBNull.Value);
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
+        }
     }
-}
+}

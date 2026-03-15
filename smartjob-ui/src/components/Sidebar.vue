@@ -43,6 +43,7 @@ import {
   MessageCircle,
   File,
   ClipboardList,
+  FileBarChart,
   X
 } from "lucide-vue-next";
 
@@ -58,6 +59,7 @@ const menu = [
   { name: "Profile", path: "/app/profile", icon: User },
   { name: "Applications", path: "/app/applications", icon: ClipboardList },
   { name: "AI Resume", path: "/app/ai", icon: FileText },
+  { name: "Reports", path: "/app/report-viewer", icon: FileBarChart },
   { name: "Chat", path: "/app/chat", icon: Bot },
 ];
 

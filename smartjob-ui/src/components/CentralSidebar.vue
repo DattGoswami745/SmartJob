@@ -50,7 +50,9 @@ const menu = [
   { name: "Manage Jobs", path: "/central/jobs", icon: Briefcase },
   { name: "Applications", path: "/central/applications", icon: ClipboardList },
   { name: "Manage Users", path: "/central/users", icon: Users },
-  { name: "Reports", path: "/central/reports", icon: FileBarChart },
+  { name: "Reports Config", path: "/central/report-management", icon: ShieldCheck },
+  { name: "Dynamic Reports", path: "/central/report-viewer", icon: FileBarChart },
+  { name: "Legacy Reports", path: "/central/reports", icon: ClipboardList },
 ]
 
 /* Default Light Theme */

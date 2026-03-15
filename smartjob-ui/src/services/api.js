@@ -623,3 +623,89 @@ export async function verifyCompany(dto) {
   if (!res.ok) throw new Error(await res.text())
   return await res.json()
 }
+/* ===================== DYNAMIC REPORTS ===================== */
+
+export async function getReportConfigs() {
+  const res = await fetch(`${BASE}/reports/config`, { credentials: "include" })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function getReportConfig(id) {
+  const res = await fetch(`${BASE}/reports/config/${id}`, { credentials: "include" })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function createReportConfig(config) {
+  const res = await fetch(`${BASE}/reports/config`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(config)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function updateReportConfig(id, config) {
+  const res = await fetch(`${BASE}/reports/config/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(config)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function generateReportData(id, request) {
+  const res = await fetch(`${BASE}/reports/generate/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(request)
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function downloadDynamicReport(id, format, filters) {
+  const filterJson = encodeURIComponent(JSON.stringify(filters))
+  const res = await fetch(`${BASE}/reports/export/${id}/${format}?filterJson=${filterJson}`, {
+    credentials: "include"
+  })
+
+  if (!res.ok) throw new Error(await res.text())
+
+  const blob = await res.blob()
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `Report_${id}.${format === 'excel' ? 'xlsx' : 'pdf'}`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+/* ===================== SECURITY TOOL ===================== */
+
+export async function encryptText(text) {
+  const res = await fetch(`${BASE}/security/encrypt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
+
+export async function decryptText(text) {
+  const res = await fetch(`${BASE}/security/decrypt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return await res.json()
+}
