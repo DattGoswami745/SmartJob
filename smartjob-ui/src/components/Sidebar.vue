@@ -3,7 +3,7 @@
     <!-- MENU -->
     <div>
       <div class="d-flex align-items-center justify-content-between mb-4">
-        <h4 class="m-0 text-center flex-grow-1">SmartJob</h4>
+        <h4 class="m-0 fw-bold gradient-text">SmartJob <span class="badge bg-primary-soft text-primary small ms-2" style="font-size: 0.6rem;"></span></h4>
         <button class="btn btn-link text-white d-lg-none p-0 ms-2" @click="$emit('close')">
           <X size="24" />
         </button>
@@ -20,7 +20,7 @@
     </div>
 
     <!-- BOTTOM ICONS -->
-    <div class="d-flex justify-content-end px-2 pt-3 border-top">
+    <div class="d-flex justify-content-end px-2 pt-3 border-top border-secondary">
       <!-- LOGOUT -->
       <button class="icon-btn logout" title="Logout" @click="logout">
         <LogOut size="20" />
@@ -31,19 +31,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import {
   Home,
   Briefcase,
   User,
   FileText,
   Bot,
-  Settings,
   LogOut,
-  MessageCircle,
-  File,
   ClipboardList,
-  FileBarChart,
   X
 } from "lucide-vue-next";
 
@@ -59,76 +55,62 @@ const menu = [
   { name: "Profile", path: "/app/profile", icon: User },
   { name: "Applications", path: "/app/applications", icon: ClipboardList },
   { name: "AI Resume", path: "/app/ai", icon: FileText },
-  { name: "Reports", path: "/app/report-viewer", icon: FileBarChart },
   { name: "Chat", path: "/app/chat", icon: Bot },
 ];
-
-const isDark = ref(false);
-
-/* ✅ DEFAULT THEME = LIGHT */
-onMounted(() => {
-  document.body.classList.remove("theme-dark");
-  document.body.classList.add("theme-light");
-});
-
-/* ✅ TOGGLE THEME */
-const toggleTheme = () => {
-  if (document.body.classList.contains("theme-light")) {
-    document.body.classList.remove("theme-light");
-    document.body.classList.add("theme-dark");
-    isDark.value = true;
-  } else {
-    document.body.classList.remove("theme-dark");
-    document.body.classList.add("theme-light");
-    isDark.value = false;
-  }
-};
-
-/* Logout */
-import { useRouter } from "vue-router";
 
 const router = useRouter();
 
 function logout() {
-  localStorage.removeItem("isLoggedIn");
-
-  // Optional: clear everything
-  // localStorage.clear();
-
+  localStorage.clear();
   router.push("/login");
-};
+}
 </script>
 
 <style scoped>
 .sidebar {
   width: 240px;
+  background: #1e293b;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1040;
+  transition: all 0.3s;
   overflow-y: auto;
 }
 
+.gradient-text {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .sidebar-link {
-  color: var(--sidebar-text);
+  color: #94a3b8;
   padding: 12px 16px;
   border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   margin-bottom: 4px;
+  text-decoration: none;
+  font-weight: 500;
 }
 
 .sidebar-link:hover {
-  background-color: var(--sidebar-hover-bg);
-  color: var(--sidebar-hover-text);
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #ffffff;
   transform: translateX(4px);
 }
 
 .sidebar-link.router-link-active {
-  background-color: var(--sidebar-active-bg);
-  color: var(--sidebar-active-text);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  background-color: #3b82f6;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .icon-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--sidebar-text);
+  color: #94a3b8;
   padding: 10px;
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -136,12 +118,25 @@ function logout() {
 }
 
 .icon-btn:hover {
-  background-color: var(--sidebar-active-bg);
+  background-color: #3b82f6;
   color: white;
   transform: translateY(-2px);
 }
 
 .logout:hover {
-  background-color: var(--logout-hover);
+  background-color: #ef4444;
+}
+
+.bg-primary-soft {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+@media (max-width: 991.98px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.show {
+    transform: translateX(0);
+  }
 }
 </style>

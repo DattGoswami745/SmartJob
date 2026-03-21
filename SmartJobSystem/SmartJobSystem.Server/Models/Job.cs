@@ -16,6 +16,11 @@ namespace SmartJobSystem.Server.Models
         public bool IsActive { get; set; }
         public bool IsApproved { get; set; }
 
+        // Job Description Feature
+        public string? JobDescriptionFile { get; set; }
+        public string? JobDescriptionText { get; set; }
+        public DateTime? JobDescriptionUpdatedAt { get; set; }
+
         // Optional property for UI display
         public string? CompanyName { get; set; }
     }

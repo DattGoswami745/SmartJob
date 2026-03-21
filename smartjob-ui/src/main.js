@@ -11,15 +11,12 @@ import "bootstrap"
 import "@/assets/main.css"
 
 /* ===============================
-   🔥 THEME INITIALIZATION (FIX)
+   🔥 THEME INITIALIZATION (FIXED: ALWAYS WHITE)
    =============================== */
 
-// Get saved theme or default to dark
-const savedTheme = localStorage.getItem("theme") || "theme-dark"
-
-// ⚠️ APPLY THEME TO <BODY> — NOT #app
-document.body.classList.remove("theme-light", "theme-dark")
-document.body.classList.add(savedTheme)
+// Force white theme for all users
+document.body.classList.remove("theme-dark")
+document.body.classList.add("theme-light")
 
 /* ===============================
    🚀 CREATE APP

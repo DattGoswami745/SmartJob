@@ -11,7 +11,7 @@
         <FileX size="48" class="text-muted mb-3 opacity-50 mx-auto d-block" />
         <h5 class="fw-bold text-main mb-2">No Applications Found</h5>
         <p class="text-muted m-0">You haven't applied to any jobs yet. Browse available jobs to get started!</p>
-        <router-link to="/jobs" class="btn btn-primary-gradient mt-4 px-4 py-2">
+        <router-link to="/app/jobs" class="btn btn-primary-gradient mt-4 px-4 py-2">
           Browse Jobs
         </router-link>
       </div>

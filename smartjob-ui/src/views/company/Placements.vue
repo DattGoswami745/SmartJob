@@ -17,7 +17,7 @@
           <div class="select-wrapper">
             <select v-model="selectedJobId" class="form-select custom-select" @change="fetchApplications">
               <option value="" disabled>--- Select a Job to see Applicants ---</option>
-              <option v-for="job in jobs" :key="job.jobId" :value="job.jobId">
+              <option v-for="job in approvedJobs" :key="job.jobId" :value="job.jobId">
                 {{ job.title }}
               </option>
             </select>
@@ -147,6 +147,10 @@ const targetApp = ref(null)
 const targetJobTitle = computed(() => {
   const job = jobs.value.find(j => j.jobId === selectedJobId.value)
   return job ? job.title : ""
+})
+
+const approvedJobs = computed(() => {
+  return jobs.value.filter(j => j.isApproved)
 })
 
 const filteredApplications = computed(() => {

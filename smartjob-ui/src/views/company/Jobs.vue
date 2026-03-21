@@ -52,9 +52,66 @@
         </div>
 
         <div class="form-group full-width">
-          <label>Description <span class="required">*</span></label>
-          <textarea v-model="newJob.description" placeholder="Detailed job description..." :class="{ 'is-invalid': errors.description }"></textarea>
-          <span class="error-msg" v-if="errors.description">{{ errors.description }}</span>
+          <label>Job Description <span class="required">*</span></label>
+          <div class="description-type-toggle mb-3">
+            <button 
+              type="button" 
+              class="toggle-btn" 
+              :class="{ active: newJob.descriptionType === 'text' }"
+              @click="newJob.descriptionType = 'text'"
+            >
+              <i class="bi bi-fonts me-2"></i> Write Description
+            </button>
+            <button 
+              type="button" 
+              class="toggle-btn" 
+              :class="{ active: newJob.descriptionType === 'file' }"
+              @click="newJob.descriptionType = 'file'"
+            >
+              <i class="bi bi-file-earmark-arrow-up me-2"></i> Upload Document
+            </button>
+          </div>
+
+          <!-- Text Description -->
+          <div v-if="newJob.descriptionType === 'text'">
+            <textarea 
+              v-model="newJob.jobDescriptionText" 
+              placeholder="Detailed job description (supports basic formatting)..." 
+              class="rich-textarea"
+              :class="{ 'is-invalid': errors.jobDescriptionText }"
+            ></textarea>
+            <div class="char-count small text-muted text-end mt-1">{{ (newJob.jobDescriptionText || '').length }} characters</div>
+            <span class="error-msg" v-if="errors.jobDescriptionText">{{ errors.jobDescriptionText }}</span>
+          </div>
+
+          <!-- File Upload -->
+          <div v-else class="file-upload-zone" :class="{ 'has-file': newJob.descriptionFile }">
+            <input 
+              type="file" 
+              id="newJobFile" 
+              class="d-none" 
+              @change="handleNewFileChange" 
+              accept=".pdf,.doc,.docx" 
+            />
+            <label for="newJobFile" class="file-label">
+              <div v-if="!newJob.descriptionFile">
+                <i class="bi bi-cloud-upload fs-2 d-block mb-2"></i>
+                <span>Click to upload PDF, DOC, or DOCX</span>
+                <p class="small text-muted mb-0">Max size: 5MB</p>
+              </div>
+              <div v-else class="file-info">
+                <i class="bi bi-file-earmark-check-fill text-primary fs-3 me-3"></i>
+                <div class="text-start">
+                  <div class="fw-bold">{{ newJob.descriptionFile.name }}</div>
+                  <div class="small text-muted">{{ (newJob.descriptionFile.size / 1024).toFixed(1) }} KB</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-auto" @click.stop.prevent="removeNewFile">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </label>
+            <span class="error-msg" v-if="errors.descriptionFile">{{ errors.descriptionFile }}</span>
+          </div>
         </div>
 
         <div class="form-group">
@@ -112,9 +169,67 @@
         </div>
 
         <div class="form-group full-width">
-          <label>Description <span class="required">*</span></label>
-          <textarea v-model="editingJob.description" placeholder="Detailed job description..." :class="{ 'is-invalid': updateErrors.description }"></textarea>
-          <span class="error-msg" v-if="updateErrors.description">{{ updateErrors.description }}</span>
+          <label>Job Description <span class="required">*</span></label>
+          <div class="description-type-toggle mb-3">
+            <button 
+              type="button" 
+              class="toggle-btn" 
+              :class="{ active: editingJob.descriptionType === 'text' }"
+              @click="editingJob.descriptionType = 'text'"
+            >
+              <i class="bi bi-fonts me-2"></i> Write Description
+            </button>
+            <button 
+              type="button" 
+              class="toggle-btn" 
+              :class="{ active: editingJob.descriptionType === 'file' }"
+              @click="editingJob.descriptionType = 'file'"
+            >
+              <i class="bi bi-file-earmark-arrow-up me-2"></i> Upload Document
+            </button>
+          </div>
+
+          <!-- Text Description -->
+          <div v-if="editingJob.descriptionType === 'text'">
+            <textarea 
+              v-model="editingJob.jobDescriptionText" 
+              placeholder="Detailed job description (supports basic formatting)..." 
+              class="rich-textarea"
+              :class="{ 'is-invalid': updateErrors.jobDescriptionText }"
+            ></textarea>
+            <div class="char-count small text-muted text-end mt-1">{{ (editingJob.jobDescriptionText || '').length }} characters</div>
+            <span class="error-msg" v-if="updateErrors.jobDescriptionText">{{ updateErrors.jobDescriptionText }}</span>
+          </div>
+
+          <!-- File Upload -->
+          <div v-else class="file-upload-zone" :class="{ 'has-file': editingJob.descriptionFile || editingJob.jobDescriptionFile }">
+            <input 
+              type="file" 
+              id="editJobFile" 
+              class="d-none" 
+              @change="handleEditFileChange" 
+              accept=".pdf,.doc,.docx" 
+            />
+            <label for="editJobFile" class="file-label">
+              <div v-if="!editingJob.descriptionFile && !editingJob.jobDescriptionFile">
+                <i class="bi bi-cloud-upload fs-2 d-block mb-2"></i>
+                <span>Click to upload PDF, DOC, or DOCX</span>
+                <p class="small text-muted mb-0">Max size: 5MB</p>
+              </div>
+              <div v-else class="file-info">
+                <i class="bi bi-file-earmark-check-fill text-primary fs-3 me-3"></i>
+                <div class="text-start">
+                  <div class="fw-bold">{{ editingJob.descriptionFile ? editingJob.descriptionFile.name : (editingJob.jobDescriptionFile || '').split('/').pop() }}</div>
+                  <div class="small text-muted" v-if="editingJob.descriptionFile">{{ (editingJob.descriptionFile.size / 1024).toFixed(1) }} KB</div>
+                  <div class="small text-primary" v-else>Existing document</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-auto" @click.stop.prevent="removeEditFile">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </label>
+            <span class="error-msg" v-if="updateErrors.descriptionFile">{{ updateErrors.descriptionFile }}</span>
+          </div>
         </div>
 
         <div class="form-group">
@@ -255,11 +370,14 @@ const fetchVerificationStatus = async () => {
 
 const newJob = ref({
   title: "",
-  description: "",
+  description: "", // Keep for basic overview if needed, but primarily using rich text now
   requiredSkills: "",
   jobType: "",
   salaryRange: "",
-  lastDate: ""
+  lastDate: "",
+  descriptionType: "text",
+  jobDescriptionText: "",
+  descriptionFile: null
 })
 
 const editingJob = ref({})
@@ -271,12 +389,39 @@ const validateJobData = (targetJob, targetErrors) => {
   let isValid = true
 
   if (!targetJob.value.title?.trim()) { targetErrors.value.title = "Job title is required"; isValid = false }
-  if (!targetJob.value.description?.trim()) { targetErrors.value.description = "Description is required"; isValid = false }
+  
+  if (targetJob.value.descriptionType === 'text') {
+    if (!targetJob.value.jobDescriptionText?.trim()) { 
+      targetErrors.value.jobDescriptionText = "Job description text is required"; 
+      isValid = false 
+    }
+  } else {
+    if (!targetJob.value.descriptionFile && !targetJob.value.jobDescriptionFile) {
+      targetErrors.value.descriptionFile = "Please upload a description document";
+      isValid = false
+    }
+  }
+
   if (!targetJob.value.requiredSkills?.trim()) { targetErrors.value.requiredSkills = "Required skills are needed"; isValid = false }
   if (!targetJob.value.jobType) { targetErrors.value.jobType = "Select a job type"; isValid = false }
   if (!targetJob.value.salaryRange?.trim()) { targetErrors.value.salaryRange = "Salary range is required"; isValid = false }
 
   return isValid
+}
+
+const handleNewFileChange = (e) => {
+  const file = e.target.files[0]
+  if (file) newJob.value.descriptionFile = file
+}
+const removeNewFile = () => { newJob.value.descriptionFile = null }
+
+const handleEditFileChange = (e) => {
+  const file = e.target.files[0]
+  if (file) editingJob.value.descriptionFile = file
+}
+const removeEditFile = () => {
+  editingJob.value.descriptionFile = null
+  editingJob.value.jobDescriptionFile = null
 }
 
 const validateJob = () => validateJobData(newJob, errors)
@@ -309,6 +454,10 @@ const editJob = (job) => {
   editingJob.value = { ...job }
   editingJob.value.lastDate = editingJob.value.lastDate ? editingJob.value.lastDate.split('T')[0] : ""
   
+  // Set description type based on existing data
+  editingJob.value.descriptionType = job.jobDescriptionFile ? 'file' : 'text'
+  editingJob.value.descriptionFile = null // Reset new file selection
+
   let val = editingJob.value.salaryRange
   if (val && /LPA$/i.test(val)) {
     editingJob.value.salaryRange = val.replace(/\s*LPA$/i, "")
@@ -331,18 +480,34 @@ const createJob = async () => {
 
   try {
     loading.value = true
-    const payload = { ...newJob.value }
-    if (!payload.lastDate) payload.lastDate = null
+    
+    const formData = new FormData()
+    formData.append("title", newJob.value.title)
+    formData.append("description", newJob.value.title) // Use title as short desc for now
+    formData.append("requiredSkills", newJob.value.requiredSkills)
+    formData.append("jobType", newJob.value.jobType)
+    formData.append("salaryRange", newJob.value.salaryRange)
+    if (newJob.value.lastDate) formData.append("lastDate", newJob.value.lastDate)
+    
+    if (newJob.value.descriptionType === 'text') {
+      formData.append("jobDescriptionText", newJob.value.jobDescriptionText)
+    } else if (newJob.value.descriptionFile) {
+      formData.append("descriptionFile", newJob.value.descriptionFile)
+    }
 
-    await addCompanyJob(payload)
+    await addCompanyJob(formData)
     notify("Job Posted Successfully!", "success")
 
-    newJob.value = { title: "", description: "", requiredSkills: "", jobType: "", salaryRange: "", lastDate: "" }
+    newJob.value = { 
+      title: "", description: "", requiredSkills: "", jobType: "", 
+      salaryRange: "", lastDate: "", descriptionType: "text", 
+      jobDescriptionText: "", descriptionFile: null 
+    }
     errors.value = {}
     showAddJob.value = false
     await loadJobs()
   } catch (err) {
-    alert("Error: " + err.message)
+    notify("Error: " + err.message, "error")
   } finally {
     loading.value = false
   }
@@ -354,10 +519,27 @@ const saveUpdateJob = async () => {
 
   try {
     loading.value = true
-    const payload = { ...editingJob.value }
-    if (!payload.lastDate) payload.lastDate = null
+    const formData = new FormData()
+    formData.append("jobId", editingJob.value.jobId)
+    formData.append("title", editingJob.value.title)
+    formData.append("description", editingJob.value.title)
+    formData.append("requiredSkills", editingJob.value.requiredSkills)
+    formData.append("jobType", editingJob.value.jobType)
+    formData.append("salaryRange", editingJob.value.salaryRange)
+    if (editingJob.value.lastDate) formData.append("lastDate", editingJob.value.lastDate)
 
-    await updateCompanyJob(editingJob.value.jobId, payload)
+    if (editingJob.value.descriptionType === 'text') {
+      formData.append("jobDescriptionText", editingJob.value.jobDescriptionText || "")
+      formData.append("jobDescriptionFile", "") // Explicitly clear file path if switched to text
+    } else {
+      if (editingJob.value.descriptionFile) {
+        formData.append("descriptionFile", editingJob.value.descriptionFile)
+      } else {
+        formData.append("jobDescriptionFile", editingJob.value.jobDescriptionFile || "")
+      }
+    }
+
+    await updateCompanyJob(editingJob.value.jobId, formData)
     notify("Listing Updated Successfully!", "success")
     showUpdateJob.value = false
     await loadJobs()
@@ -527,6 +709,75 @@ input:focus, textarea:focus, select:focus {
   border-color: #0ea5e9;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+}
+
+/* Job Description Styles */
+.description-type-toggle {
+  display: flex;
+  gap: 1rem;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.toggle-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.rich-textarea {
+  min-height: 250px;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+.file-upload-zone {
+  border: 2px dashed #e2e8f0;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.file-upload-zone:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.file-upload-zone.has-file {
+  border-color: #10b981;
+  border-style: solid;
+  background: #f0fdf4;
+}
+
+.file-label {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  display: block;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
 }
 
 .bg-success-soft {

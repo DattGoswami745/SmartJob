@@ -182,10 +182,7 @@ import { useRouter } from "vue-router"
 import { signupUser, verifyEmail, resendOTP } from "../services/api"
 import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Clock, Briefcase } from "lucide-vue-next"
 
-onMounted(() => {
-  document.body.classList.remove("theme-dark")
-  document.body.classList.add("theme-light")
-})
+
 
 const isLoading = ref(false)
 const router = useRouter()

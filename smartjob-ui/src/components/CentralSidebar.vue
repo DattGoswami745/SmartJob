@@ -1,9 +1,10 @@
 <template>
   <div class="sidebar d-flex flex-column justify-content-between p-3">
-
     <!-- MENU -->
     <div>
-      <h4 class="text-center mb-4">SmartJob Central</h4>
+      <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="m-0 fw-bold gradient-text">SmartJob <span class="badge bg-primary-soft text-primary small ms-2" style="font-size: 0.6rem;">CENTRAL</span></h4>
+      </div>
 
       <ul class="nav flex-column">
         <li v-for="item in menu" :key="item.name" class="nav-item">
@@ -16,20 +17,17 @@
     </div>
 
     <!-- BOTTOM ICONS -->
-    <div class="d-flex justify-content-end px-2">
-
+    <div class="d-flex justify-content-end px-2 pt-3 border-top border-secondary">
       <!-- LOGOUT -->
       <button class="icon-btn logout" title="Logout" @click="logout">
         <LogOut size="20" />
       </button>
-
     </div>
 
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 
 import {
@@ -55,12 +53,6 @@ const menu = [
   { name: "Legacy Reports", path: "/central/reports", icon: ClipboardList },
 ]
 
-/* Default Light Theme */
-onMounted(() => {
-  document.body.classList.remove("theme-dark")
-  document.body.classList.add("theme-light")
-})
-
 /* Logout */
 function logout() {
   localStorage.removeItem("isLoggedIn")
@@ -70,52 +62,65 @@ function logout() {
 
 <style scoped>
 .sidebar {
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
+  width: 290px;
+  background: #1e293b;
   height: 100vh;
   position: sticky;
   top: 0;
-  background: var(--sidebar-bg); /* Use the global sidebar background variable */
-  color: var(--sidebar-text);
+  z-index: 1040;
+  transition: all 0.3s;
   overflow-y: auto;
 }
 
+.gradient-text {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .sidebar-link {
-  color: #cbd5e1;
-  padding: 10px 12px;
-  border-radius: 6px;
+  color: #94a3b8;
+  padding: 12px 16px;
+  border-radius: 12px;
   transition: all 0.3s ease;
+  margin-bottom: 4px;
   text-decoration: none;
+  font-weight: 500;
 }
 
 .sidebar-link:hover {
-  background-color: #0d6efd;
-  color: white;
-  transform: translateX(6px);
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #ffffff;
+  transform: translateX(4px);
 }
 
-.router-link-active {
-  background-color: #2563eb;
+.sidebar-link.router-link-active {
+  background-color: #3b82f6;
   color: white !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .icon-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  padding: 8px;
-  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 10px;
+  border-radius: 12px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .icon-btn:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-  transform: rotate(15deg);
+  background-color: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
 }
 
 .logout:hover {
-  background-color: rgba(239, 68, 68, 0.3);
+  background-color: #ef4444;
+}
+
+.bg-primary-soft {
+  background: rgba(59, 130, 246, 0.2);
 }
 </style>

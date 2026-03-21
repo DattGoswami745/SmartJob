@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SmartJobSystem.Server.Data;
 
@@ -43,6 +43,8 @@ namespace SmartJobSystem.Server.Controllers
                     j.SalaryRange,
                     j.PostedDate,
                     j.LastDate,
+                    j.JobDescriptionFile,
+                    j.JobDescriptionText,
 
                     c.CompanyName,
                     c.Industry,
@@ -78,6 +80,8 @@ namespace SmartJobSystem.Server.Controllers
                     salaryRange = reader["SalaryRange"].ToString(),
                     postedDate = reader["PostedDate"],
                     lastDate = reader["LastDate"] == DBNull.Value ? null : reader["LastDate"],
+                    jobDescriptionFile = reader["JobDescriptionFile"] == DBNull.Value ? null : reader["JobDescriptionFile"].ToString(),
+                    jobDescriptionText = reader["JobDescriptionText"] == DBNull.Value ? null : reader["JobDescriptionText"].ToString(),
 
                     companyName = reader["CompanyName"].ToString(),
                     industry = reader["Industry"].ToString(),

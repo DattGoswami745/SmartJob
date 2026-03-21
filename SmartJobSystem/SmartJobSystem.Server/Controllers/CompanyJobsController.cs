@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartJobSystem.Server.Data;
 using SmartJobSystem.Server.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace SmartJobSystem.Server.Controllers
 {
@@ -9,10 +10,12 @@ namespace SmartJobSystem.Server.Controllers
     public class CompanyJobsController : ControllerBase
     {
         private readonly DbHelper _db;
+        private readonly IWebHostEnvironment _env;
 
-        public CompanyJobsController(DbHelper db)
+        public CompanyJobsController(DbHelper db, IWebHostEnvironment env)
         {
             _db = db;
+            _env = env;
         }
 
         [HttpGet]
@@ -29,7 +32,7 @@ namespace SmartJobSystem.Server.Controllers
         }
 
         [HttpPost("add")]
-        public async Task<IActionResult> AddJob([FromBody] Job job)
+        public async Task<IActionResult> AddJob([FromForm] Job job, IFormFile? descriptionFile)
         {
             int? companyId = HttpContext.Session.GetInt32("CompanyId");
             string? role = HttpContext.Session.GetString("Role");
@@ -49,6 +52,35 @@ namespace SmartJobSystem.Server.Controllers
             if (string.IsNullOrWhiteSpace(job.Title))
                 return BadRequest("Job Title is required");
 
+            // Handle File Upload
+            if (descriptionFile != null && descriptionFile.Length > 0)
+            {
+                var ext = Path.GetExtension(descriptionFile.FileName).ToLower();
+                if (ext != ".pdf" && ext != ".doc" && ext != ".docx")
+                    return BadRequest("Invalid file type. Only PDF and Word documents are allowed.");
+
+                if (descriptionFile.Length > 5 * 1024 * 1024)
+                    return BadRequest("File size exceeds 5MB limit.");
+
+                var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "job_descriptions");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{descriptionFile.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await descriptionFile.CopyToAsync(fileStream);
+                }
+
+                job.JobDescriptionFile = $"/uploads/job_descriptions/{uniqueFileName}";
+            }
+
+            if (!string.IsNullOrEmpty(job.JobDescriptionText) || !string.IsNullOrEmpty(job.JobDescriptionFile))
+            {
+                job.JobDescriptionUpdatedAt = DateTime.UtcNow;
+            }
+
             // Override companyId from session for security
             job.CompanyId = companyId.Value;
             job.IsActive = true;
@@ -64,7 +96,7 @@ namespace SmartJobSystem.Server.Controllers
         }
 
         [HttpPut("update/{jobId}")]
-        public async Task<IActionResult> UpdateJob(int jobId, [FromBody] Job job)
+        public async Task<IActionResult> UpdateJob(int jobId, [FromForm] Job job, IFormFile? descriptionFile)
         {
             int? companyId = HttpContext.Session.GetInt32("CompanyId");
             string? role = HttpContext.Session.GetString("Role");
@@ -77,9 +109,44 @@ namespace SmartJobSystem.Server.Controllers
 
             // Verify the job belongs to this company first
             var existingJobs = await _db.GetJobsByCompanyAsync(companyId.Value);
-            if (!existingJobs.Any(j => j.JobId == jobId))
+            var existing = existingJobs.FirstOrDefault(j => j.JobId == jobId);
+            if (existing == null)
             {
                 return NotFound("Job not found or does not belong to your company.");
+            }
+
+            // Handle File Upload
+            if (descriptionFile != null && descriptionFile.Length > 0)
+            {
+                var ext = Path.GetExtension(descriptionFile.FileName).ToLower();
+                if (ext != ".pdf" && ext != ".doc" && ext != ".docx")
+                    return BadRequest("Invalid file type. Only PDF and Word documents are allowed.");
+
+                if (descriptionFile.Length > 5 * 1024 * 1024)
+                    return BadRequest("File size exceeds 5MB limit.");
+
+                var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "job_descriptions");
+                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                var uniqueFileName = $"{Guid.NewGuid()}_{descriptionFile.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await descriptionFile.CopyToAsync(fileStream);
+                }
+
+                job.JobDescriptionFile = $"/uploads/job_descriptions/{uniqueFileName}";
+            }
+            else
+            {
+                // Preserve existing file if no new one is uploaded
+                job.JobDescriptionFile = existing.JobDescriptionFile;
+            }
+
+            if (!string.IsNullOrEmpty(job.JobDescriptionText) || !string.IsNullOrEmpty(job.JobDescriptionFile))
+            {
+                job.JobDescriptionUpdatedAt = DateTime.UtcNow;
             }
 
             job.CompanyId = companyId.Value;

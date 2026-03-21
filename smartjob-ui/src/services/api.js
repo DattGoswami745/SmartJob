@@ -282,24 +282,22 @@ export async function getCompanyJobs() {
   return await res.json()
 }
 
-export async function addCompanyJob(job) {
+export async function addCompanyJob(formData) {
   const res = await fetch(`${BASE}/company/jobs/add`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify(job)
+    body: formData
   })
 
   if (!res.ok) throw new Error(await res.text())
   return await res.json()
 }
 
-export async function updateCompanyJob(jobId, job) {
+export async function updateCompanyJob(jobId, formData) {
   const res = await fetch(`${BASE}/company/jobs/update/${jobId}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify(job)
+    body: formData
   })
 
   if (!res.ok) throw new Error(await res.text())

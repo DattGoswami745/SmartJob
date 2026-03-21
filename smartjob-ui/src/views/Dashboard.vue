@@ -154,7 +154,13 @@
                 </span>
               </td>
               <td><span class="text-muted small">{{ job.postedDate.split("T")[0] }}</span></td>
-              <td class="text-end pe-4">
+              <td class="text-end pe-4 d-flex gap-2 justify-content-end">
+                <button 
+                  class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                  @click="openInfo(job)"
+                >
+                  Details
+                </button>
                 <button
                   class="btn custom-apply-btn"
                   :class="{
@@ -251,12 +257,131 @@
         </button>
       </div>
     </div>
+
+    <!-- INFO MODAL -->
+    <transition name="fade">
+      <div v-if="selectedJob" class="custom-modal-backdrop" @click.self="selectedJob = null">
+        <div class="premium-modal-content premium-table-card">
+          <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-light">
+            <div class="d-flex align-items-center">
+              <div class="job-avatar me-3">
+                <Briefcase size="24" class="text-primary" />
+              </div>
+              <div>
+                <h4 class="fw-bold m-0 text-main">{{ selectedJob.title }}</h4>
+                <span class="text-muted">{{ selectedJob.companyName || 'SmartJob System' }}</span>
+              </div>
+            </div>
+            <button class="btn btn-icon btn-outline-secondary rounded-circle" @click="selectedJob = null">
+              <X size="20" />
+            </button>
+          </div>
+          
+          <div class="modal-body-content">
+            <div class="row g-3 mb-4">
+               <div class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Industry</p>
+                   <p class="fw-medium text-main m-0">{{ selectedJob.industry || 'IT & Tech' }}</p>
+                 </div>
+               </div>
+               <div class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Location</p>
+                   <div class="d-flex align-items-center gap-1">
+                     <MapPin size="16" class="text-muted" />
+                     <p class="fw-medium text-main m-0">{{ selectedJob.location || 'Not Specified' }}</p>
+                   </div>
+                 </div>
+               </div>
+               <div class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Job Type</p>
+                   <p class="fw-medium text-main m-0">{{ selectedJob.jobType || 'Full-time' }}</p>
+                 </div>
+               </div>
+               <div class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Salary</p>
+                   <p class="fw-medium text-success m-0">{{ selectedJob.salaryRange || 'Competitive' }}</p>
+                 </div>
+               </div>
+               <!-- LAST DATE -->
+               <div v-if="selectedJob.lastDate" class="col-md-6">
+                 <div class="p-3 rounded-3 bg-light-subtle border border-light">
+                   <p class="text-muted small mb-1">Last Date to Apply</p>
+                   <div class="d-flex align-items-center gap-1">
+                     <Calendar size="16" class="text-muted" />
+                     <p :class="{'text-danger': isClosingSoon(selectedJob.lastDate)}" class="fw-bold m-0">
+                       {{ formatDate(selectedJob.lastDate) }}
+                     </p>
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            <div class="mb-4">
+              <h6 class="fw-bold text-main mb-2">Job Description</h6>
+              
+              <!-- Case 1: Uploaded File -->
+              <div v-if="selectedJob.jobDescriptionFile" class="file-view-box p-3 rounded-3 border border-primary-subtle bg-primary-subtle bg-opacity-10 d-flex align-items-center mb-3">
+                <i class="bi bi-file-earmark-pdf-fill text-danger fs-3 me-3" v-if="selectedJob.jobDescriptionFile.endsWith('.pdf')"></i>
+                <i class="bi bi-file-earmark-word-fill text-primary fs-3 me-3" v-else></i>
+                <div class="flex-grow-1">
+                  <p class="mb-0 fw-bold text-main small">Official Description Document</p>
+                  <p class="mb-0 text-muted small">{{ selectedJob.jobDescriptionFile.split('/').pop() }}</p>
+                </div>
+                <a :href="API_HOST + selectedJob.jobDescriptionFile" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3">
+                  <i class="bi bi-download me-1"></i> View/Download
+                </a>
+              </div>
+
+              <!-- Case 2: Rich Text -->
+              <div v-if="selectedJob.jobDescriptionText" class="rich-text-view p-3 rounded-3 bg-light border border-light mb-3">
+                <div class="description-content" style="white-space: pre-line;">{{ selectedJob.jobDescriptionText }}</div>
+              </div>
+
+              <!-- Fallback: Basic Description -->
+              <p v-if="!selectedJob.jobDescriptionFile && !selectedJob.jobDescriptionText" class="text-muted lh-lg">{{ selectedJob.description || 'No description provided.' }}</p>
+            </div>
+            
+            <div class="mb-4">
+              <h6 class="fw-bold text-main mb-2">Required Skills</h6>
+              <div class="d-flex flex-wrap gap-2">
+                <span class="badge bg-primary-subtle text-primary fw-medium py-2 px-3 rounded-pill">{{ selectedJob.requiredSkills }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-top border-light d-flex gap-3 justify-content-end">
+            <button class="btn btn-outline-secondary px-4 custom-btn" @click="selectedJob = null">
+              Close
+            </button>
+            <button
+              class="btn custom-btn px-5"
+              :class="{
+                'btn-applied': selectedJob.applied || isUserPlaced, 
+                'btn-primary-gradient': !selectedJob.applied && !isUserPlaced
+              }"
+              :disabled="selectedJob.applied || isUserPlaced"
+              @click="apply(selectedJob)"
+            >
+              {{ 
+                selectedJob.applicationStatus === 'Placed' ? "🎉 Placed!" : 
+                (isUserPlaced ? "Cannot Apply" : 
+                (selectedJob.applied ? "Applied" : "Apply Now")) 
+              }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
-import { getJobs, getDashboardData, applyJob } from "../services/api"
+import { getJobs, getDashboardData, applyJob, API_HOST } from "@/services/api"
 import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck, Trophy } from "lucide-vue-next"
 import { useRouter } from "vue-router"
 
@@ -290,6 +415,7 @@ const isUserPlaced = computed(() => {
 
 /* COMPUTED FILTERED JOBS */
 const filteredJobs = computed(() => {
+  if (!Array.isArray(jobs.value)) return []
   return jobs.value.filter((job) => {
     // Check City/Location
     const matchCity = !filters.value.city || 
@@ -311,6 +437,10 @@ function clearFilters() {
   filters.value.city = ""
   filters.value.company = ""
   filters.value.salary = ""
+}
+
+function openInfo(job) {
+  selectedJob.value = job
 }
 
 /* LOAD DATA USING SESSION */

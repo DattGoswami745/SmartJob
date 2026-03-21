@@ -161,10 +161,11 @@ const approvedJobs = computed(() => {
 })
 
 const filteredJobs = computed(() => {
-  if (!searchJob.value.trim()) return jobs.value
+  const list = jobs.value.filter(j => j.isApproved)
+  if (!searchJob.value.trim()) return list
   
   const searchTerm = searchJob.value.toLowerCase()
-  return jobs.value.filter(j => 
+  return list.filter(j => 
     j.title?.toLowerCase().includes(searchTerm) || 
     (j.companyName && j.companyName.toLowerCase().includes(searchTerm))
   )

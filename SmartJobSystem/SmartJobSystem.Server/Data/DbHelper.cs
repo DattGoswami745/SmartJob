@@ -50,6 +50,9 @@ namespace SmartJobSystem.Server.Data
             j.LastDate,
             j.IsActive,
             j.IsApproved,
+            j.JobDescriptionFile,
+            j.JobDescriptionText,
+            j.JobDescriptionUpdatedAt,
             c.CompanyName
         FROM Jobs j
         LEFT JOIN Companies c ON j.CompanyId = c.CompanyId
@@ -75,7 +78,10 @@ namespace SmartJobSystem.Server.Data
                     LastDate = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
                     IsActive = reader.GetBoolean(9),
                     IsApproved = reader.GetBoolean(10),
-                    CompanyName = reader.IsDBNull(11) ? null : reader.GetString(11)
+                    JobDescriptionFile = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    JobDescriptionText = reader.IsDBNull(12) ? null : reader.GetString(12),
+                    JobDescriptionUpdatedAt = reader.IsDBNull(13) ? (DateTime?)null : reader.GetDateTime(13),
+                    CompanyName = reader.IsDBNull(14) ? null : reader.GetString(14)
                 });
             }
 
@@ -100,7 +106,10 @@ namespace SmartJobSystem.Server.Data
                     PostedDate,
                     LastDate,
                     IsActive,
-                    IsApproved
+                    IsApproved,
+                    JobDescriptionFile,
+                    JobDescriptionText,
+                    JobDescriptionUpdatedAt
                 FROM Jobs
                 WHERE CompanyId = @CompanyId AND IsActive = 1
                 ORDER BY PostedDate DESC
@@ -125,7 +134,10 @@ namespace SmartJobSystem.Server.Data
                     PostedDate = reader.GetDateTime(7),
                     LastDate = reader.IsDBNull(8) ? (DateTime?)null : reader.GetDateTime(8),
                     IsActive = reader.GetBoolean(9),
-                    IsApproved = reader.GetBoolean(10)
+                    IsApproved = reader.GetBoolean(10),
+                    JobDescriptionFile = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    JobDescriptionText = reader.IsDBNull(12) ? null : reader.GetString(12),
+                    JobDescriptionUpdatedAt = reader.IsDBNull(13) ? (DateTime?)null : reader.GetDateTime(13)
                 });
             }
 
@@ -752,9 +764,9 @@ namespace SmartJobSystem.Server.Data
             using var con = GetConnection();
             using var cmd = new SqlCommand(@"
                 INSERT INTO Jobs 
-                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, LastDate, IsActive, IsApproved)
+                (CompanyId, Title, Description, RequiredSkills, JobType, SalaryRange, PostedDate, LastDate, IsActive, IsApproved, JobDescriptionFile, JobDescriptionText, JobDescriptionUpdatedAt)
                 VALUES
-                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @LastDate, @IsActive, @IsApproved);
+                (@CompanyId, @Title, @Description, @RequiredSkills, @JobType, @SalaryRange, @PostedDate, @LastDate, @IsActive, @IsApproved, @JobDescriptionFile, @JobDescriptionText, @JobDescriptionUpdatedAt);
                 SELECT SCOPE_IDENTITY();
             ", con);
 
@@ -768,6 +780,9 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
             cmd.Parameters.Add("@IsActive", SqlDbType.Bit).Value = true;
             cmd.Parameters.Add("@IsApproved", SqlDbType.Bit).Value = job.IsApproved;
+            cmd.Parameters.Add("@JobDescriptionFile", SqlDbType.NVarChar).Value = (object)job.JobDescriptionFile ?? DBNull.Value;
+            cmd.Parameters.Add("@JobDescriptionText", SqlDbType.NVarChar).Value = (object)job.JobDescriptionText ?? DBNull.Value;
+            cmd.Parameters.Add("@JobDescriptionUpdatedAt", SqlDbType.DateTime).Value = (object)job.JobDescriptionUpdatedAt ?? DBNull.Value;
 
             await con.OpenAsync();
             var result = await cmd.ExecuteScalarAsync();
@@ -789,7 +804,10 @@ namespace SmartJobSystem.Server.Data
                     JobType = @JobType,
                     SalaryRange = @SalaryRange,
                     LastDate = @LastDate,
-                    IsApproved = @IsApproved
+                    IsApproved = @IsApproved,
+                    JobDescriptionFile = @JobDescriptionFile,
+                    JobDescriptionText = @JobDescriptionText,
+                    JobDescriptionUpdatedAt = @JobDescriptionUpdatedAt
                 WHERE JobId = @JobId AND IsActive = 1
             ", con);
 
@@ -802,6 +820,9 @@ namespace SmartJobSystem.Server.Data
             cmd.Parameters.Add("@SalaryRange", SqlDbType.NVarChar, 100).Value = job.SalaryRange ?? "";
             cmd.Parameters.Add("@LastDate", SqlDbType.DateTime2).Value = (object)job.LastDate ?? DBNull.Value;
             cmd.Parameters.Add("@IsApproved", SqlDbType.Bit).Value = job.IsApproved;
+            cmd.Parameters.Add("@JobDescriptionFile", SqlDbType.NVarChar).Value = (object)job.JobDescriptionFile ?? DBNull.Value;
+            cmd.Parameters.Add("@JobDescriptionText", SqlDbType.NVarChar).Value = (object)job.JobDescriptionText ?? DBNull.Value;
+            cmd.Parameters.Add("@JobDescriptionUpdatedAt", SqlDbType.DateTime).Value = (object)job.JobDescriptionUpdatedAt ?? DBNull.Value;
 
             await con.OpenAsync();
             int rowsAffected = await cmd.ExecuteNonQueryAsync();

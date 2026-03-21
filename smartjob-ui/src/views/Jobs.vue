@@ -201,7 +201,27 @@
 
             <div class="mb-4">
               <h6 class="fw-bold text-main mb-2">Job Description</h6>
-              <p class="text-muted lh-lg">{{ selectedJob.description || 'No description provided.' }}</p>
+              
+              <!-- Case 1: Uploaded File -->
+              <div v-if="selectedJob.jobDescriptionFile" class="file-view-box p-3 rounded-3 border border-primary-subtle bg-primary-subtle bg-opacity-10 d-flex align-items-center mb-3">
+                <i class="bi bi-file-earmark-pdf-fill text-danger fs-3 me-3" v-if="selectedJob.jobDescriptionFile.endsWith('.pdf')"></i>
+                <i class="bi bi-file-earmark-word-fill text-primary fs-3 me-3" v-else></i>
+                <div class="flex-grow-1">
+                  <p class="mb-0 fw-bold text-main small">Official Description Document</p>
+                  <p class="mb-0 text-muted small">{{ selectedJob.jobDescriptionFile.split('/').pop() }}</p>
+                </div>
+                <a :href="API_HOST + selectedJob.jobDescriptionFile" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3">
+                  <i class="bi bi-download me-1"></i> View/Download
+                </a>
+              </div>
+
+              <!-- Case 2: Rich Text -->
+              <div v-if="selectedJob.jobDescriptionText" class="rich-text-view p-3 rounded-3 bg-light border border-light mb-3">
+                <div class="description-content" style="white-space: pre-line;">{{ selectedJob.jobDescriptionText }}</div>
+              </div>
+
+              <!-- Fallback: Basic Description -->
+              <p v-if="!selectedJob.jobDescriptionFile && !selectedJob.jobDescriptionText" class="text-muted lh-lg">{{ selectedJob.description || 'No description provided.' }}</p>
             </div>
             
             <div class="mb-4">
@@ -243,7 +263,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
-import { getJobs, applyJob } from "@/services/api"
+import { getJobs, applyJob, API_HOST } from "@/services/api"
 import { Briefcase, Search, X, MapPin, Filter, Calendar } from "lucide-vue-next"
 
 const jobs = ref([])
