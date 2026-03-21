@@ -45,9 +45,8 @@
                 </span>
               </td>
               <td>
-                <!-- Only allow viewing profile/activity if they are a regular 'User' -->
                 <button 
-                  v-if="user.role === 'User'" 
+                  v-if="user.role === 'User' || user.role === 'Company'" 
                   class="action-btn view-btn" 
                   @click="openProfileModal(user)"
                 >
@@ -144,9 +143,9 @@
 
             <div class="resume-section mt-4" v-if="profileData.resumePath">
               <h5>Resume</h5>
-              <a :href="`https://localhost:7269${profileData.resumePath}`" target="_blank" class="download-resume-btn">
-                <i class="bi bi-file-earmark-pdf-fill"></i> View / Download Resume
-              </a>
+              <button @click="openResumeViewer" class="download-resume-btn border-0 w-auto px-4">
+                <i class="bi bi-file-earmark-pdf-fill"></i> View Resume
+              </button>
             </div>
           </div>
           
@@ -191,15 +190,23 @@
       </div>
     </div>
 
+    <!-- 📄 RESUME MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
 <script>
 import { ref, onMounted, computed } from "vue"
-import { getCentralUsers, deleteCentralUser, getUserProfileForAdmin, getUserActivityLogs } from "@/services/api"
+import { getCentralUsers, deleteCentralUser, getUserProfileForAdmin, getUserActivityLogs, API_HOST } from "@/services/api"
 import { useNotification } from "@/composables/useNotification"
+import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
+  components: { ResumeModal },
   setup() {
     const { notify } = useNotification()
     const users = ref([])
@@ -218,6 +225,17 @@ export default {
     const showActivityModal = ref(false)
     const loadingActivity = ref(false)
     const activityData = ref([])
+
+    // Resume Viewer
+    const isResumeModalOpen = ref(false)
+    const resumeViewerUrl = ref("")
+
+    const openResumeViewer = () => {
+      if (profileData.value?.resumePath) {
+        resumeViewerUrl.value = `${API_HOST}${profileData.value.resumePath}`
+        isResumeModalOpen.value = true
+      }
+    }
 
     const loadUsers = async () => {
       try {
@@ -303,8 +321,8 @@ export default {
     const filteredUsers = computed(() => {
       let filtered = users.value
       
-      // Only show normal end users
-      filtered = filtered.filter(u => u.role === 'User')
+      // Show end users and company managers
+      filtered = filtered.filter(u => u.role === 'User' || u.role === 'Company')
 
       if (!searchUser.value.trim()) return filtered
       
@@ -365,7 +383,10 @@ export default {
       closeActivityModal,
 
       formatDate,
-      formatDetailedDate
+      formatDetailedDate,
+      isResumeModalOpen,
+      resumeViewerUrl,
+      openResumeViewer
     }
   }
 }
@@ -564,40 +585,34 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 .custom-modal {
-  background: var(--bg-card);
+  background: white;
   width: 90%;
-  max-width: 450px;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  max-width: 480px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
-  animation: modal-fade-in 0.3s ease-out forwards;
+  animation: modal-slide-up 0.3s ease-out forwards;
 }
 
 .profile-modal, .activity-modal {
-  max-width: 550px;
-  max-height: 80vh;
+  max-width: 650px;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Required so activity timeline can scroll if long */
-.activity-modal .modal-body {
-  overflow-y: auto;
-  max-height: 60vh;
-}
-
-@keyframes modal-fade-in {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes modal-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {

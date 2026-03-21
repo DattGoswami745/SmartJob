@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using SmartJobSystem.Server.Data;
+using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobAPI.Controllers
 {
@@ -9,11 +11,13 @@ namespace SmartJobAPI.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
+        private readonly DbHelper _db;
 
-        public ProfileController(IConfiguration config, IWebHostEnvironment env)
+        public ProfileController(IConfiguration config, IWebHostEnvironment env, DbHelper db)
         {
             _config = config;
             _env = env;
+            _db = db;
         }
 
         /* ================================
@@ -51,6 +55,17 @@ namespace SmartJobAPI.Controllers
             if (!reader.Read())
                 return NotFound();
 
+            string resumePath = reader["ResumePath"]?.ToString() ?? "";
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+
+            // Decrypt ResumePath if it exists and looks encrypted
+            if (!string.IsNullOrEmpty(resumePath) && !resumePath.StartsWith("/api/"))
+            {
+                try {
+                    resumePath = SecurityHelper.Decrypt(resumePath, encryptionKey);
+                } catch { /* Not encrypted or already plain */ }
+            }
+
             return Ok(new
             {
                 fullName = reader["FullName"],
@@ -59,7 +74,7 @@ namespace SmartJobAPI.Controllers
                 experienceYears = reader["ExperienceYears"] == DBNull.Value ? 0 : (int)reader["ExperienceYears"],
                 education = reader["Education"]?.ToString() ?? "",
                 preferredLocation = reader["PreferredLocation"]?.ToString() ?? "",
-                resumePath = reader["ResumePath"]?.ToString() ?? ""
+                resumePath = resumePath
             });
         }
 
@@ -115,7 +130,18 @@ namespace SmartJobAPI.Controllers
             cmd.Parameters.AddWithValue("@ExperienceYears", dto.ExperienceYears);
             cmd.Parameters.AddWithValue("@Education", dto.Education ?? "");
             cmd.Parameters.AddWithValue("@PreferredLocation", dto.PreferredLocation ?? "");
-            cmd.Parameters.AddWithValue("@ResumePath", dto.ResumePath ?? "");
+            string resumePathToSave = dto.ResumePath ?? "";
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+
+            // Always encrypt before saving back to DB
+            if (!string.IsNullOrEmpty(resumePathToSave))
+            {
+                try {
+                    resumePathToSave = SecurityHelper.Encrypt(resumePathToSave, encryptionKey);
+                } catch { /* Handle error or keep as is */ }
+            }
+
+            cmd.Parameters.AddWithValue("@ResumePath", resumePathToSave);
 
             cmd.ExecuteNonQuery();
 
@@ -123,7 +149,7 @@ namespace SmartJobAPI.Controllers
         }
 
         /* ================================
-           UPLOAD RESUME
+           UPLOAD RESUME (STORE IN DB)
         ================================= */
         [HttpPost("upload-resume")]
         public async Task<IActionResult> UploadResume(IFormFile file)
@@ -139,53 +165,84 @@ namespace SmartJobAPI.Controllers
             if (ext != ".pdf" && ext != ".doc" && ext != ".docx")
                 return BadRequest(new { message = "Invalid file type. Only PDF and Word documents are allowed." });
 
-            // Ensure directory exists
-            var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "resumes");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
+            // Read file content as byte array
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            byte[] fileBytes = ms.ToArray();
 
-            // Generate unique filename
-            var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
 
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(fileStream);
-            }
+            // ENCRYPT THE FILE BEFORE SAVING
+            byte[] encryptedFileBytes = SecurityHelper.EncryptBytes(fileBytes, encryptionKey);
 
-            // The URL path to save in DB
-            var dbPath = $"/uploads/resumes/{uniqueFileName}";
+            // Save encrypted binary data to DB via DbHelper
+            bool success = await _db.UpdateUserResumeBinaryAsync(userId.Value, encryptedFileBytes, file.FileName, file.ContentType);
 
-            // Update DB
+            if (!success)
+                return StatusCode(500, new { message = "Failed to save resume to database." });
+
+            // Backward compatibility: update ResumePath to point to the new download endpoint
+            var downloadPathPlain = $"/api/profile/download-resume/{userId}";
+            
+            // ENCRYPT THE PATH string
+            var encryptedDownloadPath = SecurityHelper.Encrypt(downloadPathPlain, encryptionKey);
+            
             using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
             con.Open();
+            var updatePathCmd = new SqlCommand("UPDATE dbo.UserProfiles SET ResumePath=@ResumePath WHERE UserId=@UserId", con);
+            updatePathCmd.Parameters.AddWithValue("@UserId", userId);
+            updatePathCmd.Parameters.AddWithValue("@ResumePath", encryptedDownloadPath);
+            updatePathCmd.ExecuteNonQuery();
 
-            // Check if profile exists
-            var checkCmd = new SqlCommand("SELECT COUNT(*) FROM dbo.UserProfiles WHERE UserId=@UserId", con);
-            checkCmd.Parameters.AddWithValue("@UserId", userId);
-            int exists = (int)checkCmd.ExecuteScalar();
+            return Ok(new { message = "Resume uploaded successfully (Encrypted).", resumePath = downloadPathPlain });
+        }
 
-            SqlCommand cmd;
-            if (exists == 0)
+        /* ================================
+           DOWNLOAD RESUME (FETCH FROM DB)
+        ================================= */
+        [HttpGet("download-resume/{userId?}")]
+        public async Task<IActionResult> DownloadResume(int? userId)
+        {
+            var currentUserId = HttpContext.Session.GetInt32("UserId");
+            if (currentUserId == null)
+                return Unauthorized(new { message = "Session expired" });
+
+            // If userId is provided, ensure current user has permission (self, admin, or recruiter)
+            int targetUserId = userId ?? currentUserId.Value;
+
+            // Basic permission check
+            if (targetUserId != currentUserId.Value)
             {
-                // INSERT
-                cmd = new SqlCommand(@"
-                    INSERT INTO dbo.UserProfiles (UserId, ResumePath)
-                    VALUES (@UserId, @ResumePath)", con);
-            }
-            else
-            {
-                // UPDATE
-                cmd = new SqlCommand(@"
-                    UPDATE dbo.UserProfiles SET ResumePath=@ResumePath
-                    WHERE UserId=@UserId", con);
+                var role = HttpContext.Session.GetString("Role");
+                if (role != "SuperAdmin" && role != "Company" && role != "Central")
+                {
+                    return Unauthorized(new { message = "You do not have permission to view this resume." });
+                }
             }
 
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            cmd.Parameters.AddWithValue("@ResumePath", dbPath);
-            cmd.ExecuteNonQuery();
+            var resume = await _db.GetUserResumeBinaryAsync(targetUserId);
 
-            return Ok(new { message = "Resume uploaded successfully.", resumePath = dbPath });
+            if (resume == null || resume.FileContent == null)
+                return NotFound(new { message = "Resume not found in database." });
+
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+
+            // DECRYPT THE FILE CONTENT
+            byte[] decryptedFileBytes;
+            try {
+                decryptedFileBytes = SecurityHelper.DecryptBytes((byte[])resume.FileContent, encryptionKey);
+            } catch {
+                decryptedFileBytes = (byte[])resume.FileContent; // Fallback if not encrypted
+            }
+
+            // ENSURE THE FILE IS VIEWABLE INLINE
+            string fileName = (string)resume.FileName ?? "Resume.pdf";
+            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{fileName}\"");
+
+            return File(
+                decryptedFileBytes, 
+                (string)resume.ContentType ?? "application/octet-stream"
+            );
         }
     }
 

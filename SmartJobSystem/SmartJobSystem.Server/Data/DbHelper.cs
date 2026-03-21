@@ -500,6 +500,61 @@ namespace SmartJobSystem.Server.Data
             return null;
         }
 
+        // 🔹 Update user resume in DB (Binary)
+        public async Task<bool> UpdateUserResumeBinaryAsync(int userId, byte[] fileContent, string fileName, string contentType)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                IF EXISTS (SELECT 1 FROM UserProfiles WHERE UserId = @UserId)
+                BEGIN
+                    UPDATE UserProfiles SET 
+                        ResumeFile = @ResumeFile, 
+                        ResumeFileName = @ResumeFileName, 
+                        ResumeContentType = @ResumeContentType
+                    WHERE UserId = @UserId
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO UserProfiles (UserId, ResumeFile, ResumeFileName, ResumeContentType)
+                    VALUES (@UserId, @ResumeFile, @ResumeFileName, @ResumeContentType)
+                END", con);
+
+            cmd.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
+            cmd.Parameters.Add("@ResumeFile", SqlDbType.VarBinary).Value = (object)fileContent ?? DBNull.Value;
+            cmd.Parameters.Add("@ResumeFileName", SqlDbType.NVarChar).Value = (object)fileName ?? DBNull.Value;
+            cmd.Parameters.Add("@ResumeContentType", SqlDbType.NVarChar).Value = (object)contentType ?? DBNull.Value;
+
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
+        // 🔹 Get user resume from DB (Binary)
+        public async Task<dynamic?> GetUserResumeBinaryAsync(int userId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                SELECT ResumeFile, ResumeFileName, ResumeContentType 
+                FROM UserProfiles 
+                WHERE UserId = @UserId", con);
+
+            cmd.Parameters.Add("@UserId", SqlDbType.Int).Value = userId;
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new
+                {
+                    FileContent = reader.IsDBNull(0) ? null : (byte[])reader["ResumeFile"],
+                    FileName = reader.IsDBNull(1) ? null : reader.GetString(1),
+                    ContentType = reader.IsDBNull(2) ? null : reader.GetString(2)
+                };
+            }
+
+            return null;
+        }
+
         /* ===================== CENTRAL USERS ===================== */
 
         public async Task<List<object>> GetAllUsersAsync()
@@ -895,15 +950,17 @@ namespace SmartJobSystem.Server.Data
                 {
                     using var cmd = new SqlCommand(@"
                         INSERT INTO dbo.CompanyVerificationDocuments 
-                        (nCompanyId, vDocumentType, vFileName, vFilePath, nRecordedBy, dRecordedOnUTC)
-                        VALUES (@CompanyId, @Type, @FileName, @FilePath, @RecordedBy, GETUTCDATE())
+                        (nCompanyId, vDocumentType, vFileName, vFilePath, nRecordedBy, dRecordedOnUTC, vDocumentFile, vDocumentContentType)
+                        VALUES (@CompanyId, @Type, @FileName, @FilePath, @RecordedBy, GETUTCDATE(), @File, @ContentType)
                     ", con, transaction);
 
                     cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = doc.CompanyId;
                     cmd.Parameters.Add("@Type", SqlDbType.VarChar, 100).Value = doc.DocumentType;
                     cmd.Parameters.Add("@FileName", SqlDbType.VarChar, 500).Value = doc.FileName;
-                    cmd.Parameters.Add("@FilePath", SqlDbType.VarChar, 1000).Value = doc.FilePath;
+                    cmd.Parameters.Add("@FilePath", SqlDbType.VarChar, 1000).Value = (object)doc.FilePath ?? DBNull.Value;
                     cmd.Parameters.Add("@RecordedBy", SqlDbType.BigInt).Value = (object)doc.RecordedBy ?? DBNull.Value;
+                    cmd.Parameters.Add("@File", SqlDbType.VarBinary).Value = (object)doc.DocumentFile ?? DBNull.Value;
+                    cmd.Parameters.Add("@ContentType", SqlDbType.VarChar, 100).Value = (object)doc.ContentType ?? DBNull.Value;
 
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -924,7 +981,8 @@ namespace SmartJobSystem.Server.Data
             using var con = GetConnection();
             using var cmd = new SqlCommand(@"
                 SELECT nDocumentId, nCompanyId, vDocumentType, vFileName, vFilePath, 
-                       IsVerified, nVerifiedBy, dVerifiedOnUTC, IsRejected, vRejectReason
+                       IsVerified, nVerifiedBy, dVerifiedOnUTC, IsRejected, vRejectReason,
+                       vDocumentContentType
                 FROM dbo.CompanyVerificationDocuments
                 WHERE nCompanyId = @CompanyId
             ", con);
@@ -945,10 +1003,62 @@ namespace SmartJobSystem.Server.Data
                     VerifiedBy = reader.IsDBNull(6) ? (long?)null : reader.GetInt64(6),
                     VerifiedOnUTC = reader.IsDBNull(7) ? (DateTime?)null : reader.GetDateTime(7),
                     IsRejected = reader.GetBoolean(8),
-                    RejectReason = reader.IsDBNull(9) ? "" : reader.GetString(9)
+                    RejectReason = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                    DocumentFile = null, // Excluded from list for performance
+                    ContentType = reader.IsDBNull(10) ? "" : reader.GetString(10)
                 });
             }
             return docs;
+        }
+
+        public async Task UpdateDocumentPathAsync(long documentId, string path)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("UPDATE dbo.CompanyVerificationDocuments SET vFilePath = @Path WHERE nDocumentId = @Id", con);
+            cmd.Parameters.Add("@Path", SqlDbType.VarChar, 1000).Value = path;
+            cmd.Parameters.Add("@Id", SqlDbType.BigInt).Value = documentId;
+
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task<CompanyVerificationDocument?> GetCompanyDocumentBinaryAsync(long documentId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                SELECT nDocumentId, nCompanyId, vDocumentType, vFileName, vFilePath, 
+                       vDocumentFile, vDocumentContentType
+                FROM dbo.CompanyVerificationDocuments
+                WHERE nDocumentId = @Id
+            ", con);
+            cmd.Parameters.Add("@Id", SqlDbType.BigInt).Value = documentId;
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new CompanyVerificationDocument
+                {
+                    DocumentId = reader.GetInt64(0),
+                    CompanyId = reader.GetInt64(1),
+                    DocumentType = reader.GetString(2),
+                    FileName = reader.GetString(3),
+                    FilePath = reader.GetString(4),
+                    DocumentFile = reader.IsDBNull(5) ? null : (byte[])reader["vDocumentFile"],
+                    ContentType = reader.IsDBNull(6) ? "" : reader.GetString(6)
+                };
+            }
+            return null;
+        }
+
+        public async Task DeleteCompanyDocumentsAsync(long companyId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("DELETE FROM dbo.CompanyVerificationDocuments WHERE nCompanyId = @CompanyId", con);
+            cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = companyId;
+
+            await con.OpenAsync();
+            await cmd.ExecuteNonQueryAsync();
         }
 
         public async Task<bool> VerifyCompanyAsync(int companyId, bool isApproved, string reason, int adminId)
@@ -996,14 +1106,6 @@ namespace SmartJobSystem.Server.Data
             }
         }
 
-        public async Task DeleteCompanyDocumentsAsync(int companyId)
-        {
-            using var con = GetConnection();
-            using var cmd = new SqlCommand("DELETE FROM dbo.CompanyVerificationDocuments WHERE nCompanyId = @CompanyId", con);
-            cmd.Parameters.Add("@CompanyId", SqlDbType.BigInt).Value = companyId;
-            await con.OpenAsync();
-            await cmd.ExecuteNonQueryAsync();
-        }
 
         public async Task<bool> IsCompanyVerifiedAsync(int companyId)
         {

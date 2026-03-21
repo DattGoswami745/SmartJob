@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartJobSystem.Server.Data;
+using SmartJobSystem.Server.Helpers;
+using Microsoft.Extensions.Configuration;
 
 namespace SmartJobSystem.Server.Controllers
 {
@@ -8,10 +10,12 @@ namespace SmartJobSystem.Server.Controllers
     public class AdminVerificationController : ControllerBase
     {
         private readonly DbHelper _db;
+        private readonly IConfiguration _config;
 
-        public AdminVerificationController(DbHelper db)
+        public AdminVerificationController(DbHelper db, IConfiguration config)
         {
             _db = db;
+            _config = config;
         }
 
         [HttpGet("company-documents/{companyId}")]
@@ -28,6 +32,18 @@ namespace SmartJobSystem.Server.Controllers
                 return StatusCode(403, new { message = "You do not have permission to view these documents." });
 
             var docs = await _db.GetCompanyDocumentsAsync(companyId);
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+
+            foreach (var doc in docs)
+            {
+                if (!string.IsNullOrEmpty(doc.FilePath) && !doc.FilePath.StartsWith("/api/"))
+                {
+                    try {
+                        doc.FilePath = SecurityHelper.Decrypt(doc.FilePath, encryptionKey);
+                    } catch { /* Handle non-encrypted or errors */ }
+                }
+            }
+
             return Ok(docs);
         }
 

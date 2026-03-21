@@ -59,6 +59,49 @@ namespace SmartJobSystem.Server.Helpers
             return sr.ReadToEnd();
         }
 
+        public static byte[] EncryptBytes(byte[] plainBytes, string key)
+        {
+            if (plainBytes == null || plainBytes.Length == 0) return plainBytes;
+
+            byte[] keyBytes = GetKeyBytes(key);
+            using Aes aes = Aes.Create();
+            aes.Key = keyBytes;
+            aes.GenerateIV();
+            byte[] iv = aes.IV;
+
+            using var encryptor = aes.CreateEncryptor(aes.Key, iv);
+            using var ms = new MemoryStream();
+            ms.Write(iv, 0, iv.Length);
+
+            using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+            {
+                cs.Write(plainBytes, 0, plainBytes.Length);
+            }
+
+            return ms.ToArray();
+        }
+
+        public static byte[] DecryptBytes(byte[] cipherBytes, string key)
+        {
+            if (cipherBytes == null || cipherBytes.Length == 0) return cipherBytes;
+
+            using Aes aes = Aes.Create();
+            byte[] iv = new byte[aes.BlockSize / 8];
+            Array.Copy(cipherBytes, 0, iv, 0, iv.Length);
+
+            aes.Key = GetKeyBytes(key);
+            aes.IV = iv;
+
+            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+            using var ms = new MemoryStream();
+            using (var cs = new CryptoStream(new MemoryStream(cipherBytes, iv.Length, cipherBytes.Length - iv.Length), decryptor, CryptoStreamMode.Read))
+            {
+                cs.CopyTo(ms);
+            }
+
+            return ms.ToArray();
+        }
+
         private static byte[] GetKeyBytes(string key)
         {
             // Hash the key to ensure it's always exactly 32 bytes (256 bits)

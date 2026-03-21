@@ -81,9 +81,9 @@
                 <label class="form-label text-muted small fw-semibold mb-2">Resume (PDF or Word)</label>
                 <div class="d-flex align-items-center gap-3">
                   <input type="file" ref="resumeInput" class="form-control premium-input flex-grow-1" style="max-width: 400px;" accept=".pdf,.doc,.docx" @change="uploadResume" />
-                  <a v-if="profile.resumePath" :href="`https://localhost:7269${profile.resumePath}`" target="_blank" class="btn btn-outline-primary d-flex align-items-center gap-2">
+                  <button v-if="profile.resumePath" @click="openResumeViewer" class="btn btn-outline-primary d-flex align-items-center gap-2">
                     <FileText size="18" /> View Current Resume
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -155,12 +155,21 @@
         </div>
       </div>
     </div>
+
+    <!-- 📄 RESUME MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { CheckCircle2, AlertCircle, UserCircle, Briefcase, Award, Search, Plus, X, Save, FileText } from "lucide-vue-next"
+import { API_HOST } from "@/services/api"
+import ResumeModal from "@/components/ResumeModal.vue"
 
 /* PROFILE */
 const profile = ref({
@@ -178,6 +187,17 @@ const resumeInput = ref(null)
 /* 🔔 POPUP STATE */
 const successMessage = ref("")
 const errorMessage = ref("")
+
+/* 📄 RESUME VIEWER STATE */
+const isResumeModalOpen = ref(false)
+const resumeViewerUrl = ref("")
+
+const openResumeViewer = () => {
+  if (profile.value.resumePath) {
+    resumeViewerUrl.value = `${API_HOST}${profile.value.resumePath}`
+    isResumeModalOpen.value = true
+  }
+}
 
 /* SKILLS */
 const skillSearch = ref("")
@@ -208,7 +228,7 @@ function removeSkill(skill) {
 
 onMounted(async () => {
   try {
-    const res = await fetch("https://localhost:7269/api/profile", {
+    const res = await fetch(`${API_HOST}/api/profile`, {
       credentials: "include"
     })
 
@@ -232,7 +252,7 @@ async function updateProfile() {
   profile.value.skills = selectedSkills.value.join(",")
 
   try {
-    const res = await fetch("https://localhost:7269/api/profile", {
+    const res = await fetch(`${API_HOST}/api/profile`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -263,7 +283,7 @@ async function uploadResume(event) {
   errorMessage.value = ""
 
   try {
-    const res = await fetch("https://localhost:7269/api/profile/upload-resume", {
+    const res = await fetch(`${API_HOST}/api/profile/upload-resume`, {
       method: "POST",
       credentials: "include",
       body: formData

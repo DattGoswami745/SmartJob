@@ -183,9 +183,9 @@
                 <p class="mb-0 fw-bold text-main small">Official Description Document</p>
                 <p class="mb-0 text-muted small">{{ selectedJob.jobDescriptionFile.split('/').pop() }}</p>
               </div>
-              <a :href="API_HOST + selectedJob.jobDescriptionFile" target="_blank" class="btn btn-sm btn-primary rounded-pill px-3">
-                <i class="bi bi-download me-1"></i> View/Download
-              </a>
+              <button @click="openResumeViewer(selectedJob.jobDescriptionFile)" class="btn btn-sm btn-primary rounded-pill px-4">
+                <i class="bi bi-eye me-1"></i> View
+              </button>
             </div>
 
             <!-- Case 2: Rich Text -->
@@ -228,6 +228,12 @@
       </div>
     </div>
 
+    <!-- 📄 DOCUMENT VIEWER MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
@@ -243,8 +249,10 @@ import {
  } from "@/services/api"
 import { useNotification } from "@/composables/useNotification"
 import { useConfirm } from "@/composables/useConfirm"
+import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
+  components: { ResumeModal },
   setup() {
     const { notify } = useNotification()
     const { confirm } = useConfirm()
@@ -259,6 +267,17 @@ export default {
     const selectedJobType = ref("")
     const isApprovedCollapsed = ref(true)
     const isRejectedCollapsed = ref(true)
+
+    // Document Viewer
+    const isResumeModalOpen = ref(false)
+    const resumeViewerUrl = ref("")
+
+    const openResumeViewer = (filePath) => {
+      if (filePath) {
+        resumeViewerUrl.value = `${API_HOST}${filePath}`
+        isResumeModalOpen.value = true
+      }
+    }
 
     const loadJobs = async () => {
       try {
@@ -413,7 +432,10 @@ export default {
         toggleRejected,
         selectedCompany,
         selectedJobType,
-        resetFilters
+        resetFilters,
+        isResumeModalOpen,
+        resumeViewerUrl,
+        openResumeViewer
      }
   }
 }
@@ -802,14 +824,14 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
+  z-index: 2000;
 }
 
 .modal-content {

@@ -170,9 +170,9 @@
 
             <div class="resume-section mt-4" v-if="profileData.resumePath">
               <h5>Resume</h5>
-              <a :href="`https://localhost:7269${profileData.resumePath}`" target="_blank" class="download-resume-btn">
-                <i class="bi bi-file-earmark-pdf"></i> View / Download Resume
-              </a>
+              <button @click="openResumeViewer" class="download-resume-btn border-0 w-auto px-4">
+                <i class="bi bi-file-earmark-pdf"></i> View Resume
+              </button>
             </div>
           </div>
           
@@ -183,14 +183,23 @@
         </div>
       </div>
     </div>
+
+    <!-- 📄 RESUME MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
 <script>
 import { ref, onMounted, computed } from "vue"
-import { getAllApplications, deleteCentralApplication, getUserProfileForAdmin } from "@/services/api"
+import { getAllApplications, deleteCentralApplication, getUserProfileForAdmin, API_HOST } from "@/services/api"
+import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
+  components: { ResumeModal },
   setup() {
     const applications = ref([])
     const loading = ref(true)
@@ -207,6 +216,17 @@ export default {
     const loadingProfile = ref(false)
     const selectedApp = ref(null)
     const profileData = ref(null)
+
+    // Resume Viewer
+    const isResumeModalOpen = ref(false)
+    const resumeViewerUrl = ref("")
+
+    const openResumeViewer = () => {
+      if (profileData.value?.resumePath) {
+        resumeViewerUrl.value = `${API_HOST}${profileData.value.resumePath}`
+        isResumeModalOpen.value = true
+      }
+    }
 
     const loadApplications = async () => {
       try {
@@ -313,7 +333,11 @@ export default {
       profileData,
       openProfileModal,
       closeProfileModal,
-      formatDate
+      formatDate,
+      API_HOST,
+      isResumeModalOpen,
+      resumeViewerUrl,
+      openResumeViewer
     }
   }
 }

@@ -70,9 +70,9 @@
                   <h6 class="mb-0">{{ doc.documentType }}</h6>
                   <small class="text-muted">{{ doc.fileName }}</small>
                 </div>
-                <a :href="`${API_HOST}${doc.filePath}`" target="_blank" class="btn btn-sm btn-outline-primary">
+                <button @click="openResumeViewer(doc)" class="btn btn-sm btn-outline-primary">
                   <i class="bi bi-eye"></i> View
-                </a>
+                </button>
               </div>
             </div>
 
@@ -105,6 +105,13 @@
         </div>
       </div>
     </div>
+
+    <!-- 📄 DOCUMENT VIEWER MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
@@ -112,6 +119,7 @@
 import { ref, onMounted } from "vue";
 import { getCentralCompanies, getCompanyVerificationDocuments, verifyCompany, API_HOST } from "@/services/api";
 import { useNotification } from "@/composables/useNotification";
+import ResumeModal from "@/components/ResumeModal.vue";
 
 const { notify } = useNotification();
 const companies = ref([]);
@@ -122,6 +130,17 @@ const showDocsModal = ref(false);
 const loadingDocs = ref(false);
 const verifying = ref(false);
 const verifyReason = ref("");
+
+// Document Viewer (using ResumeModal)
+const isResumeModalOpen = ref(false);
+const resumeViewerUrl = ref("");
+
+const openResumeViewer = (doc) => {
+  if (doc?.filePath) {
+    resumeViewerUrl.value = `${API_HOST}${doc.filePath}`;
+    isResumeModalOpen.value = true;
+  }
+};
 
 const loadCompanies = async () => {
   try {
@@ -213,22 +232,39 @@ onMounted(loadCompanies);
 
 .custom-modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex; justify-content: center; align-items: center;
-  z-index: 1000;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
 }
+
 .custom-modal {
   background: white;
   width: 90%;
-  max-width: 500px;
-  border-radius: 15px;
+  max-width: 600px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
+  animation: modal-slide-up 0.3s ease-out;
 }
+
+@keyframes modal-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .modal-header {
-  padding: 15px 20px;
-  border-bottom: 1px solid #eee;
-  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .modal-body { padding: 20px; }
 .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; }

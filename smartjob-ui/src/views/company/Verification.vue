@@ -47,8 +47,11 @@
               </router-link>
             </div>
 
-            <div v-else>
-              <p class="text-muted mb-4">
+            <div v-else-if="!isPending || showEditForm">
+              <div v-if="isRejected" class="mb-4">
+                <p class="text-danger fw-bold">Please correct the following documents and re-submit:</p>
+              </div>
+              <p v-else class="text-muted mb-4">
                 To comply with our safety standards, please upload the following documents for verification. 
                 Our team will review your submission within 24-48 hours.
               </p>
@@ -118,23 +121,58 @@
                   </div>
                 </div>
 
-                <div class="mt-5">
-                  <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center" :disabled="isUploading || !isFormValid">
+                <div class="mt-5 d-flex gap-2">
+                  <button v-if="showEditForm" type="button" class="btn btn-outline-secondary rounded-3 px-4" @click="showEditForm = false">
+                    Cancel
+                  </button>
+                  <button type="submit" class="btn btn-primary flex-grow-1 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center" :disabled="isUploading || !isFormValid">
                     <span v-if="isUploading" class="spinner-border spinner-border-sm me-2"></span>
                     <Lock v-else size="18" class="me-2" />
-                    {{ isUploading ? 'Uploading Documents...' : 'Submit Documents for Verification' }}
+                    {{ isUploading ? 'Uploading Documents...' : (showEditForm ? 'Update Documents' : 'Submit Documents') }}
                   </button>
-                  <p class="text-center mt-3 small text-muted">
-                    Your documents are stored securely and used only for verification purposes.
-                  </p>
                 </div>
+                <p class="text-center mt-3 small text-muted">
+                  Your documents are stored securely and used only for verification purposes.
+                </p>
               </form>
             </div>
 
+            <!-- View Uploaded Documents Section -->
+            <div v-if="(isPending || isRejected || isVerified) && uploadedDocs.length > 0" 
+                 :class="{'mt-5 pt-4 border-top': !isPending || showEditForm, 'mt-2': isPending && !showEditForm}">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="m-0 d-flex align-items-center">
+                  <FileText size="18" class="me-2 text-primary" />
+                  {{ isPending ? 'Current Submissions' : 'Uploaded Documents' }}
+                </h5>
+                <button v-if="isPending && !showEditForm" @click="showEditForm = true" class="btn btn-sm btn-link text-decoration-none d-flex align-items-center">
+                  <i class="bi bi-pencil-square me-1"></i> Edit All
+                </button>
+              </div>
+              
+              <div class="list-group list-group-flush rounded-3 border">
+                <div v-for="doc in uploadedDocs" :key="doc.documentId" class="list-group-item d-flex justify-content-between align-items-center py-3">
+                  <div>
+                    <p class="m-0 fw-bold">{{ doc.documentType }}</p>
+                    <p class="m-0 small text-muted">{{ doc.fileName }}</p>
+                  </div>
+                  <button @click="openResumeViewer(doc)" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-eye me-1"></i> View
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 📄 DOCUMENT VIEWER MODAL -->
+    <ResumeModal 
+      :isOpen="isResumeModalOpen" 
+      :resumeUrl="resumeViewerUrl" 
+      @close="isResumeModalOpen = false" 
+    />
   </div>
 </template>
 
@@ -157,9 +195,11 @@ import {
   uploadVerificationDocuments, 
   getCompanyVerificationDocuments, 
   getSetupCompanies, 
-  checkSession 
+  checkSession,
+  API_HOST
 } from "@/services/api";
 import { useNotification } from "@/composables/useNotification";
+import ResumeModal from "@/components/ResumeModal.vue";
 
 const { notify } = useNotification();
 
@@ -172,6 +212,19 @@ const files = ref({
 const isUploading = ref(false);
 const status = ref("none"); // none, pending, verified, rejected
 const rejectionReason = ref("");
+const uploadedDocs = ref([]);
+const showEditForm = ref(false);
+
+// Document Viewer (using ResumeModal)
+const isResumeModalOpen = ref(false);
+const resumeViewerUrl = ref("");
+
+const openResumeViewer = (doc) => {
+  if (doc?.filePath) {
+    resumeViewerUrl.value = `${API_HOST}${doc.filePath}`;
+    isResumeModalOpen.value = true;
+  }
+};
 
 const isFormValid = computed(() => {
   return files.value.incorporation && files.value.gst && files.value.pan;
@@ -225,6 +278,7 @@ async function fetchStatus() {
           try {
             const docs = await getCompanyVerificationDocuments(companyId);
             if (docs && docs.length > 0) {
+              uploadedDocs.value = docs;
               const anyRejected = docs.some(d => d.isRejected);
               if (anyRejected) {
                 status.value = "rejected";
@@ -255,6 +309,10 @@ async function handleUpload() {
     await uploadVerificationDocuments(formData);
     notify("Documents uploaded successfully!", "success");
     status.value = "pending";
+    showEditForm.value = false;
+    // Clear files-selection to avoid being stuck in button-disabled state
+    files.value = { incorporation: null, gst: null, pan: null };
+    await fetchStatus(); // Refresh list to show new docs
   } catch (err) {
     notify(err.message || "Upload failed", "error");
   } finally {

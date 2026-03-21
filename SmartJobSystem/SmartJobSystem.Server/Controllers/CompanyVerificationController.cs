@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using SmartJobSystem.Server.Data;
 using SmartJobSystem.Server.Models;
+using SmartJobSystem.Server.Data;
+using SmartJobSystem.Server.Helpers;
+using Microsoft.Data.SqlClient;
 using System.IO;
+using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace SmartJobSystem.Server.Controllers
 {
@@ -10,12 +14,12 @@ namespace SmartJobSystem.Server.Controllers
     public class CompanyVerificationController : ControllerBase
     {
         private readonly DbHelper _db;
-        private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _config;
 
-        public CompanyVerificationController(DbHelper db, IWebHostEnvironment env)
+        public CompanyVerificationController(DbHelper db, IConfiguration config)
         {
             _db = db;
-            _env = env;
+            _config = config;
         }
 
         [HttpPost("upload-verification-documents")]
@@ -32,39 +36,77 @@ namespace SmartJobSystem.Server.Controllers
 
             var docs = new List<CompanyVerificationDocument>();
             var allowedTypes = new[] { "Incorporation", "GST", "PAN" };
-
-            // Ensure directory exists in wwwroot
-            var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "Uploads", "VerificationDocuments");
-            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
 
             for (int i = 0; i < files.Count; i++)
             {
                 var file = files[i];
                 var docType = i < allowedTypes.Length ? allowedTypes[i] : "Other";
                 
-                var fileName = $"{companyId}_{docType}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
+                // Read file content
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                byte[] fileBytes = ms.ToArray();
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                // Relative path for web access
-                var dbPath = $"/Uploads/VerificationDocuments/{fileName}";
+                // ENCRYPT THE FILE CONTENT
+                byte[] encryptedFileBytes = SecurityHelper.EncryptBytes(fileBytes, encryptionKey);
 
                 docs.Add(new CompanyVerificationDocument
                 {
                     CompanyId = companyId.Value,
                     DocumentType = docType,
                     FileName = file.FileName,
-                    FilePath = dbPath,
+                    FilePath = "(pending)",
+                    DocumentFile = encryptedFileBytes,
+                    ContentType = file.ContentType,
                     RecordedBy = HttpContext.Session.GetInt32("UserId")
                 });
             }
 
             await _db.UploadVerificationDocumentsAsync(docs);
-            return Ok(new { message = "Documents uploaded successfully. Verification is pending." });
+
+            // POST-PROCESSING: Update FilePath to the new download endpoint (Encrypted Download Path)
+            var savedDocs = await _db.GetCompanyDocumentsAsync(companyId.Value);
+            foreach (var d in savedDocs)
+            {
+                var downloadPathPlain = $"/api/company/download-document/{d.DocumentId}";
+                var encryptedDownloadPath = SecurityHelper.Encrypt(downloadPathPlain, encryptionKey);
+                
+                await _db.UpdateDocumentPathAsync(d.DocumentId, encryptedDownloadPath);
+            }
+
+            return Ok(new { message = "Documents uploaded and secured in database. Verification is pending." });
+        }
+
+        [HttpGet("download-document/{id}")]
+        public async Task<IActionResult> DownloadDocument(long id)
+        {
+            var companyId = HttpContext.Session.GetInt32("CompanyId");
+            var role = HttpContext.Session.GetString("Role");
+            
+            if (companyId == null && role != "Central" && role != "SuperAdmin") 
+                return Unauthorized(new { message = "Session expired or unauthorized" });
+
+            var doc = await _db.GetCompanyDocumentBinaryAsync(id);
+            if (doc == null || doc.DocumentFile == null)
+                return NotFound(new { message = "Document not found." });
+
+            // Permission check: either Central Admin or the Company owner
+            if (role != "Central" && role != "SuperAdmin" && doc.CompanyId != companyId)
+                return Unauthorized(new { message = "You do not have permission to view this document." });
+
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+
+            // DECRYPT THE FILE CONTENT
+            byte[] decryptedFileBytes;
+            try {
+                decryptedFileBytes = SecurityHelper.DecryptBytes(doc.DocumentFile, encryptionKey);
+            } catch {
+                decryptedFileBytes = doc.DocumentFile; // Fallback
+            }
+
+            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{doc.FileName}\"");
+            return File(decryptedFileBytes, doc.ContentType ?? "application/octet-stream");
         }
     }
 }

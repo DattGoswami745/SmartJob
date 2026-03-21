@@ -382,13 +382,14 @@
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { getJobs, getDashboardData, applyJob, API_HOST } from "@/services/api"
-import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck, Trophy } from "lucide-vue-next"
+import { Briefcase, FileCheck2, TrendingUp, Search, X, Filter, MapPin, User as UserIcon, ArrowRight, Zap, Target, ShieldCheck, Trophy, Calendar } from "lucide-vue-next"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
 
 /* STATE */
 const jobs = ref([])
+const selectedJob = ref(null)
 const showFilters = ref(false)
 const stats = ref({
   totalJobs: 0,

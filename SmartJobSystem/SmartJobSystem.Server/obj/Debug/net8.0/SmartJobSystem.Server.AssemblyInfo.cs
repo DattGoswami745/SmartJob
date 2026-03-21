@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartJobSystem.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1cfa442b4c063b2b87e3b87e6bed80c6bfe48265")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ada1fa7c5d3e1d4e5999e826ef757a0b065ba01b")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartJobSystem.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartJobSystem.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

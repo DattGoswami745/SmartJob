@@ -6,6 +6,8 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
 using System.IO;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
+using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobSystem.Server.Controllers
 {
@@ -14,10 +16,12 @@ namespace SmartJobSystem.Server.Controllers
     public class CompanyApplicationsController : ControllerBase
     {
         private readonly DbHelper _db;
+        private readonly IConfiguration _config;
 
-        public CompanyApplicationsController(DbHelper db)
+        public CompanyApplicationsController(DbHelper db, IConfiguration config)
         {
             _db = db;
+            _config = config;
         }
 
         [HttpGet]
@@ -173,7 +177,27 @@ namespace SmartJobSystem.Server.Controllers
             if (profile == null)
                 return NotFound(new { message = "Profile not found." });
 
-            return Ok(profile);
+            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var profileData = profile as dynamic;
+            string resumePath = profileData?.ResumePath ?? "";
+
+            // Decrypt ResumePath if it looks encrypted
+            if (!string.IsNullOrEmpty(resumePath) && !resumePath.StartsWith("/api/"))
+            {
+                try {
+                    resumePath = SecurityHelper.Decrypt(resumePath, encryptionKey);
+                } catch { /* Skip if not encrypted */ }
+            }
+
+            return Ok(new {
+                profileId = profileData.ProfileId,
+                userId = profileData.UserId,
+                skills = profileData.Skills,
+                experienceYears = profileData.ExperienceYears,
+                education = profileData.Education,
+                preferredLocation = profileData.PreferredLocation,
+                resumePath = resumePath
+            });
         }
 
         [HttpPost("mark-placed/{appId}")]

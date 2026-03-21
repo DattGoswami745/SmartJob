@@ -10,6 +10,7 @@ SELECT TOP (1000) [UserId]
       ,[IsEmailVerified]
       ,[EmailOTP]
       ,[EmailOTPExpiry]
+      ,[CompanyId]
   FROM [SmartJobDB].[dbo].[Users]
 
 Table for userprofile 
@@ -31,7 +32,7 @@ SELECT TOP (1000) [LogId]
       ,[ActionDate]
   FROM [SmartJobDB].[dbo].[UserActivityLogs]
 
-table for job
+Table for job
 /****** Script for SelectTopNRows command from SSMS  ******/
 SELECT TOP (1000) [JobId]
       ,[CompanyId]
@@ -42,16 +43,21 @@ SELECT TOP (1000) [JobId]
       ,[SalaryRange]
       ,[PostedDate]
       ,[IsActive]
-      ,[IsEmailVerified]
+      ,[LastDate]
+      ,[IsApproved]
+      ,[JobDescriptionFile]
+      ,[JobDescriptionText]
+      ,[JobDescriptionUpdatedAt]
   FROM [SmartJobDB].[dbo].[Jobs]
 
-table for company
+Table for company
 /****** Script for SelectTopNRows command from SSMS  ******/
 SELECT TOP (1000) [CompanyId]
       ,[CompanyName]
       ,[Industry]
       ,[Location]
       ,[CreatedAt]
+      ,[IsCompanyVerified]
   FROM [SmartJobDB].[dbo].[Companies]
 
 Table for application
@@ -71,3 +77,43 @@ SELECT TOP (1000) [RecommendationId]
       ,[MatchScore]
       ,[GeneratedAt]
   FROM [SmartJobDB].[dbo].[AI_JobRecommendations]
+
+Table for CompanyVerificationDocuments
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [nDocumentId]
+      ,[nCompanyId]
+      ,[vDocumentType]
+      ,[vFileName]
+      ,[vFilePath]
+      ,[IsVerified]
+      ,[nVerifiedBy]
+      ,[dVerifiedOnUTC]
+      ,[IsRejected]
+      ,[vRejectReason]
+      ,[nRecordedBy]
+      ,[dRecordedOnUTC]
+  FROM [SmartJobDB].[dbo].[CompanyVerificationDocuments]
+
+Table for ReportConfigurations
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [ReportId]
+      ,[ReportName]
+      ,[Description]
+      ,[BaseTable]
+      ,[SelectedFields]
+      ,[Filters]
+      ,[IsActive]
+      ,[CreatedBy]
+      ,[CreatedAt]
+      ,[UpdatedAt]
+  FROM [SmartJobDB].[dbo].[ReportConfigurations]
+
+Table for ReportGenerationLogs
+/****** Script for SelectTopNRows command from SSMS  ******/
+SELECT TOP (1000) [LogId]
+      ,[ReportId]
+      ,[UserId]
+      ,[GeneratedAt]
+      ,[Format]
+      ,[FilterValues]
+  FROM [SmartJobDB].[dbo].[ReportGenerationLogs]

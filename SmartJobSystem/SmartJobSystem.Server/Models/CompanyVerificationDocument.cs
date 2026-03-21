@@ -9,6 +9,8 @@ namespace SmartJobSystem.Server.Models
         public string DocumentType { get; set; }
         public string FileName { get; set; }
         public string FilePath { get; set; }
+        public byte[] DocumentFile { get; set; }
+        public string ContentType { get; set; }
         public bool IsVerified { get; set; }
         public long? VerifiedBy { get; set; }
         public DateTime? VerifiedOnUTC { get; set; }
