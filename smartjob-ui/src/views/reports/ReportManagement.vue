@@ -122,6 +122,7 @@
 import { ref, onMounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { getReportConfigs, createReportConfig, updateReportConfig } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const router = useRouter()
 const reports = ref([])
@@ -187,7 +188,7 @@ const loadReports = async () => {
   try {
     reports.value = await getReportConfigs()
   } catch (err) {
-    console.error("Error loading reports:", err)
+    handleError(err, "Load Error")
   }
 }
 
@@ -202,7 +203,7 @@ watch(selectedFields, (newVal) => {
 
 const saveConfiguration = async () => {
   if (selectedFields.value.length === 0) {
-    alert("Please select at least one field.")
+    handleError("Please select at least one field.", "Validation Error")
     return
   }
 
@@ -210,15 +211,15 @@ const saveConfiguration = async () => {
     loading.value = true
     if (editingReport.value) {
       await updateReportConfig(editingReport.value.reportId, form.value)
-      alert("Configuration updated successfully!")
+      handleSuccess("Configuration updated successfully!")
     } else {
       await createReportConfig(form.value)
-      alert("Configuration saved successfully!")
+      handleSuccess("Configuration saved successfully!")
     }
     resetForm()
     await loadReports()
   } catch (err) {
-    alert("Error saving configuration: " + err.message)
+    handleError(err, "Save Error")
   } finally {
     loading.value = false
   }

@@ -49,7 +49,6 @@ onMounted(() => {
 
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
-    console.log("Resume Modal Opening with URL:", props.resumeUrl)
     document.body.style.overflow = 'hidden'
   } else {
     document.body.style.overflow = ''

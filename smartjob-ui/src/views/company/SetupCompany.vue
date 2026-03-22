@@ -84,10 +84,7 @@
         </button>
       </div>
 
-      <!-- Error Message -->
-      <div v-if="error" class="alert alert-danger mt-4 small py-2 d-flex align-items-center gap-2">
-         <AlertCircle size="16" /> {{ error }}
-      </div>
+      <!-- Error handled by centralized toast -->
     </div>
   </div>
 </template>
@@ -97,11 +94,11 @@ import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { Building2, PlusCircle, UserPlus, ArrowLeft, CheckCircle, AlertCircle } from "lucide-vue-next"
 import { getSetupCompanies, setupCompany } from "@/services/api"
+import { handleError } from "@/utils/error-handler"
 
 const router = useRouter()
 const action = ref(null)
 const loading = ref(false)
-const error = ref("")
 const companies = ref([])
 const selectedCompanyId = ref(null)
 
@@ -118,9 +115,8 @@ async function setAction(val) {
     try {
       companies.value = await getSetupCompanies()
     } catch (err) {
-      error.value = "Failed to load companies"
+      handleError(err, "Load Error")
     } finally {
-      loading.value = false
     }
   }
 }
@@ -146,7 +142,7 @@ async function handleSetup() {
     // Let's just redirect and the guard will re-verify via api
     router.push("/company/dashboard")
   } catch (err) {
-    error.value = err.message || "Setup failed"
+    handleError(err, "Setup Failed")
   } finally {
     loading.value = false
   }

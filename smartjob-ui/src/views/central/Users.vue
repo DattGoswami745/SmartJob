@@ -202,13 +202,12 @@
 <script>
 import { ref, onMounted, computed } from "vue"
 import { getCentralUsers, deleteCentralUser, getUserProfileForAdmin, getUserActivityLogs, API_HOST } from "@/services/api"
-import { useNotification } from "@/composables/useNotification"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
   components: { ResumeModal },
   setup() {
-    const { notify } = useNotification()
     const users = ref([])
     const searchUser = ref("")
     const loading = ref(false)
@@ -242,7 +241,7 @@ export default {
         loading.value = true
         users.value = await getCentralUsers()
       } catch (err) {
-        notify("Error loading users: " + err.message, "error")
+        handleError(err, "Load Error")
       } finally {
         loading.value = false
       }
@@ -266,9 +265,10 @@ export default {
         loading.value = true
         await deleteCentralUser(userToDelete.value)
         users.value = users.value.filter(u => u.userId !== userToDelete.value)
+        handleSuccess("User removed successfully")
         closeDeleteModal()
       } catch (err) {
-        notify("Error deleting user: " + err.message, "error")
+        handleError(err, "Delete Error")
       } finally {
         loading.value = false
       }
@@ -284,7 +284,7 @@ export default {
         loadingProfile.value = true
         profileData.value = await getUserProfileForAdmin(user.userId)
       } catch (err) {
-        console.error("User profile empty or error fetching", err)
+        handleError(err, "Profile Load Error")
       } finally {
         loadingProfile.value = false
       }
@@ -306,7 +306,7 @@ export default {
         loadingActivity.value = true
         activityData.value = await getUserActivityLogs(user.userId)
       } catch (err) {
-        console.error("Error fetching activity", err)
+        handleError(err, "Activity Load Error")
       } finally {
         loadingActivity.value = false
       }

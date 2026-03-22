@@ -198,10 +198,9 @@ import {
   checkSession,
   API_HOST
 } from "@/services/api";
-import { useNotification } from "@/composables/useNotification";
+import { handleError, handleSuccess } from "@/utils/error-handler";
 import ResumeModal from "@/components/ResumeModal.vue";
 
-const { notify } = useNotification();
 
 const files = ref({
   incorporation: null,
@@ -262,7 +261,7 @@ function onFileChange(e, type) {
   }
 }
 
-async function fetchStatus() {
+const fetchStatus = async () => {
   try {
     const userData = await checkSession();
     const companyId = userData.companyId;
@@ -288,17 +287,17 @@ async function fetchStatus() {
               }
             }
           } catch (docErr) {
-            console.error("No documents found or fetch error", docErr);
+            handleError(docErr, "Status Fetch Error", true);
           }
         }
       }
     }
   } catch (err) {
-    console.error("Failed to fetch status", err);
+    handleError(err, "Session Fetch Error", true);
   }
 }
 
-async function handleUpload() {
+const handleUpload = async () => {
   isUploading.value = true;
   const formData = new FormData();
   formData.append("files", files.value.incorporation);
@@ -307,14 +306,14 @@ async function handleUpload() {
 
   try {
     await uploadVerificationDocuments(formData);
-    notify("Documents uploaded successfully!", "success");
+    handleSuccess("Documents uploaded successfully!");
     status.value = "pending";
     showEditForm.value = false;
     // Clear files-selection to avoid being stuck in button-disabled state
     files.value = { incorporation: null, gst: null, pan: null };
     await fetchStatus(); // Refresh list to show new docs
   } catch (err) {
-    notify(err.message || "Upload failed", "error");
+    handleError(err, "Upload Failed", true);
   } finally {
     isUploading.value = false;
   }

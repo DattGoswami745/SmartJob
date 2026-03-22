@@ -101,40 +101,24 @@
       </div>
     </div>
 
-    <!-- NO APPLICANTS ERROR MODAL -->
-    <div class="custom-modal-overlay" v-if="showErrorModal" @click.self="closeErrorModal">
-      <div class="custom-modal">
-        <div class="modal-header">
-          <h3>No Applicants</h3>
-          <button class="close-btn" @click="closeErrorModal"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="modal-body error-body">
-          <i class="bi bi-exclamation-triangle-fill text-warning error-icon"></i>
-          <p>{{ errorMessage }}</p>
-        </div>
-        <div class="modal-footer">
-          <button class="primary-btn ok-btn" @click="closeErrorModal">OK</button>
-        </div>
-      </div>
-    </div>
+    <!-- Removed local error modal in favor of centralized one -->
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from "vue"
 import { getCentralJobs, downloadJobReport, getCompanies, downloadCentralMultiReport } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const jobs = ref([])
 const companies = ref([])
 const searchJob = ref("")
 const loading = ref(false)
 const reportLoading = ref(false)
-
 const selectedCompany = ref(null)
 const selectedJobId = ref(null)
 
-const showErrorModal = ref(false)
-const errorMessage = ref("")
+// Removed local error modal state
 
 const loadData = async () => {
   try {
@@ -146,7 +130,7 @@ const loadData = async () => {
     jobs.value = jobsData
     companies.value = companiesData
   } catch (err) {
-    console.error("Error loading reports data:", err)
+    handleError(err, "Load Error")
   } finally {
     loading.value = false
   }
@@ -174,9 +158,9 @@ const filteredJobs = computed(() => {
 const handleDownload = async (jobId, title) => {
   try {
     await downloadJobReport(jobId)
+    handleSuccess(`Report for ${title} downloaded!`)
   } catch (err) {
-    errorMessage.value = `Cannot generate report. ${err.message}`
-    showErrorModal.value = true
+    handleError(err, "Download Failed", true)
   }
 }
 
@@ -184,17 +168,14 @@ const handleConsolidatedDownload = async () => {
   try {
     reportLoading.value = true
     await downloadCentralMultiReport(selectedCompany.value, selectedJobId.value)
+    handleSuccess("Consolidated report downloaded!")
   } catch (err) {
-    errorMessage.value = `Error: ${err.message}`
-    showErrorModal.value = true
+    handleError(err, "Generation Failed", true)
   } finally {
     reportLoading.value = false
   }
 }
 
-const closeErrorModal = () => {
-  showErrorModal.value = false
-}
 
 onMounted(() => {
   loadData()

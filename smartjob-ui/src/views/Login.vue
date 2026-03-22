@@ -70,6 +70,7 @@ import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { loginUser } from "../services/api"
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Cpu, AlertCircle } from "lucide-vue-next"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 
 
@@ -119,7 +120,10 @@ async function handleLogin() {
     } else {
       router.push("/app")
     }
+    
+    handleSuccess(`Welcome back, ${res.name}!`)
   } catch (err) {
+    handleError(err, "Login Failed", true)
     errors.value.general = "Invalid email or password"
   }
 }

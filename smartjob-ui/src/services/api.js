@@ -1,14 +1,54 @@
 const BASE = "https://localhost:7269/api"
 export const API_HOST = "https://localhost:7269"
 
+/**
+ * Common helper to handle fetch responses and standardize errors.
+ * @param {Response} res 
+ * @returns {Promise<any>}
+ */
+async function handleResponse(res) {
+  if (res.ok) {
+    const contentType = res.headers.get("content-type");
+    
+    if (contentType && contentType.includes("application/json")) {
+      const text = await res.text();
+      return text ? JSON.parse(text) : true;
+    }
+
+    // Text responses (like from the Chat endpoint)
+    if (contentType && contentType.includes("text/")) {
+      return await res.text();
+    }
+
+    // Binary responses (Blob)
+    if (contentType && !contentType.includes("application/json")) {
+      return await res.blob();
+    }
+
+    // Fallback for missing content type
+    const text = await res.text();
+    return text ? JSON.parse(text) : true;
+  }
+
+  // Handle errors
+  let errorMessage = "An error occurred";
+  try {
+    const errorData = await res.json();
+    errorMessage = errorData.message || JSON.stringify(errorData);
+  } catch (e) {
+    const textError = await res.text();
+    errorMessage = textError || `HTTP Error ${res.status}`;
+  }
+  
+  throw new Error(errorMessage);
+}
+
 /* ===================== DASHBOARD ===================== */
 export async function getDashboardData() {
   const res = await fetch(`${BASE}/dashboard`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== JOBS ===================== */
@@ -16,9 +56,7 @@ export async function getJobs() {
   const res = await fetch(`${BASE}/jobs`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== APPLY JOB ===================== */
@@ -29,9 +67,7 @@ export async function applyJob(jobId) {
     credentials: "include",
     body: JSON.stringify({ jobId })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return true
+  return handleResponse(res)
 }
 
 /* ===================== AUTH ===================== */
@@ -42,9 +78,7 @@ export async function loginUser(email, password) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function signupUser(data) {
@@ -53,9 +87,7 @@ export async function signupUser(data) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function logoutUser() {
@@ -63,9 +95,7 @@ export async function logoutUser() {
     method: "POST",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-
+  await handleResponse(res)
   localStorage.clear()
 }
 
@@ -75,12 +105,7 @@ export async function verifyEmail(email, otp) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, otp })
   })
-
-  if (!res.ok) {
-    const errorData = await res.json()
-    throw new Error(errorData.message || "Invalid OTP")
-  }
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function resendOTP(email) {
@@ -89,12 +114,7 @@ export async function resendOTP(email) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email })
   })
-
-  if (!res.ok) {
-    const errorData = await res.json()
-    throw new Error(errorData.message || "Failed to resend OTP")
-  }
-  return await res.json()
+  return handleResponse(res)
 }
 
 
@@ -104,9 +124,7 @@ export async function getProfile() {
   const res = await fetch(`${BASE}/profile`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function updateProfile(profile) {
@@ -115,16 +133,14 @@ export async function updateProfile(profile) {
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
-      skills: profile.skills,
-      education: profile.education,
-      experienceYears: profile.experienceYears,
-      preferredLocation: profile.preferredLocation,
-      resumePath: profile.resumePath || ""
+      Skills: Array.isArray(profile.skills) ? profile.skills : (profile.skills ? profile.skills.split(",").map(s => s.trim()).filter(x => x) : []),
+      Education: profile.education,
+      ExperienceYears: profile.experienceYears,
+      PreferredLocation: profile.preferredLocation,
+      ResumePath: profile.resumePath || ""
     })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== MY APPLICATIONS ===================== */
@@ -132,9 +148,7 @@ export async function getMyApplications() {
   const res = await fetch(`${BASE}/applications`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== RESUME ===================== */
@@ -146,9 +160,7 @@ export async function getResumeSuggestions(sections) {
     credentials: "include",
     body: JSON.stringify(sections)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function downloadResumeFile(resume) {
@@ -165,11 +177,7 @@ export async function downloadResumeFile(resume) {
       }))
     })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-
-  // If successful, extract the file blob and trigger a browser download
-  return await res.blob()
+  return handleResponse(res)
 }
 
 export async function downloadResumePdf(resume) {
@@ -186,10 +194,7 @@ export async function downloadResumePdf(resume) {
       }))
     })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-
-  return await res.blob()
+  return handleResponse(res)
 }
 
 export async function downloadResumeFileHtml(htmlContent) {
@@ -199,9 +204,7 @@ export async function downloadResumeFileHtml(htmlContent) {
     credentials: "include",
     body: JSON.stringify({ html: htmlContent })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.blob()
+  return handleResponse(res)
 }
 
 export async function downloadResumePdfHtml(htmlContent) {
@@ -211,9 +214,7 @@ export async function downloadResumePdfHtml(htmlContent) {
     credentials: "include",
     body: JSON.stringify({ html: htmlContent })
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.blob()
+  return handleResponse(res)
 }
 
 /* ===================== CHAT ===================== */
@@ -224,12 +225,9 @@ export async function sendGeminiMessage(message) {
     credentials: "include",
     body: JSON.stringify({ message })
   })
-
-  const text = await res.text()
-
-  if (!res.ok) throw new Error(text)
-
-  return text
+  
+  // Chat returns plain text, handleResponse handles it
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL DASHBOARD ===================== */
@@ -237,9 +235,7 @@ export async function getCentralDashboardData() {
   const res = await fetch(`${BASE}/central/dashboard`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== COMPANY DASHBOARD ===================== */
@@ -247,17 +243,14 @@ export async function getCompanyDashboardData() {
   const res = await fetch(`${BASE}/company/dashboard`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getSetupCompanies() {
   const res = await fetch(`${BASE}/company/setup/list`, {
     credentials: "include"
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function setupCompany(data) {
@@ -267,8 +260,7 @@ export async function setupCompany(data) {
     credentials: "include",
     body: JSON.stringify(data)
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== COMPANY JOBS ===================== */
@@ -277,9 +269,7 @@ export async function getCompanyJobs() {
   const res = await fetch(`${BASE}/company/jobs`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function addCompanyJob(formData) {
@@ -288,9 +278,7 @@ export async function addCompanyJob(formData) {
     credentials: "include",
     body: formData
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function updateCompanyJob(jobId, formData) {
@@ -299,9 +287,7 @@ export async function updateCompanyJob(jobId, formData) {
     credentials: "include",
     body: formData
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== COMPANY APPLICATIONS ===================== */
@@ -310,9 +296,7 @@ export async function getCompanyApplications() {
   const res = await fetch(`${BASE}/company/applications`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function deleteCompanyApplication(appId) {
@@ -320,21 +304,16 @@ export async function deleteCompanyApplication(appId) {
     method: "DELETE",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getUserProfileForCompany(userId) {
   const res = await fetch(`${BASE}/company/applications/profile/${userId}`, {
     credentials: "include"
   })
-
-  if (!res.ok) {
-    if (res.status === 404) return null
-    throw new Error(await res.text())
-  }
-  return await res.json()
+  
+  if (res.status === 404) return null
+  return handleResponse(res)
 }
 
 export async function downloadCompanyApplicationsReport(search = "", jobId = "") {
@@ -347,9 +326,7 @@ export async function markCandidateAsPlaced(appId) {
     method: "POST",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL USERS ===================== */
@@ -357,9 +334,7 @@ export async function getAllUsers() {
   const res = await fetch(`${BASE}/central/users`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL APPLICATIONS ===================== */
@@ -367,9 +342,7 @@ export async function getAllApplications() {
   const res = await fetch(`${BASE}/central/applications`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function deleteCentralApplication(appId) {
@@ -377,21 +350,16 @@ export async function deleteCentralApplication(appId) {
     method: "DELETE",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getUserProfileForAdmin(userId) {
   const res = await fetch(`${BASE}/central/applications/profile/${userId}`, {
     credentials: "include"
   })
-
-  if (!res.ok) {
-    if (res.status === 404) return null // handle no profile easily 
-    throw new Error(await res.text())
-  }
-  return await res.json()
+  
+  if (res.status === 404) return null
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL USERS ===================== */
@@ -400,9 +368,7 @@ export async function getCentralUsers() {
   const res = await fetch(`${BASE}/central/users`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function deleteCentralUser(userId) {
@@ -410,18 +376,14 @@ export async function deleteCentralUser(userId) {
     method: "DELETE",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getUserActivityLogs(userId) {
   const res = await fetch(`${BASE}/central/users/${userId}/activity`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL REPORTS ===================== */
@@ -474,9 +436,7 @@ export async function getCompanies() {
   const res = await fetch(`${BASE}/central/companies`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL JOBS ===================== */
@@ -486,9 +446,7 @@ export async function getCentralJobs(status = "All") {
     method: "GET",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function addJob(job) {
@@ -498,9 +456,7 @@ export async function addJob(job) {
     credentials: "include",
     body: JSON.stringify(job)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function updateJob(jobId, job) {
@@ -510,9 +466,7 @@ export async function updateJob(jobId, job) {
     credentials: "include",
     body: JSON.stringify(job)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function approveJob(jobId) {
@@ -520,9 +474,7 @@ export async function approveJob(jobId) {
     method: "POST",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function rejectJob(jobId) {
@@ -530,9 +482,7 @@ export async function rejectJob(jobId) {
     method: "POST",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function restoreJob(jobId) {
@@ -540,9 +490,7 @@ export async function restoreJob(jobId) {
     method: "POST",
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== CENTRAL COMPANIES ===================== */
@@ -551,9 +499,7 @@ export async function getCentralCompanies() {
   const res = await fetch(`${BASE}/central/companies`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function addCompany(company) {
@@ -563,9 +509,7 @@ export async function addCompany(company) {
     credentials: "include",
     body: JSON.stringify(company)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 /* ===================== EXPORT APPLICATIONS ===================== */
@@ -574,9 +518,7 @@ export async function exportApplicationsByJob(jobId) {
   const res = await fetch(`${BASE}/central/export/${jobId}`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.blob()
+  return handleResponse(res)
 }
 
 /* ===================== COMPANY VERIFICATION ===================== */
@@ -587,27 +529,21 @@ export async function uploadVerificationDocuments(formData) {
     credentials: "include",
     body: formData
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getCompanyVerificationDocuments(companyId) {
   const res = await fetch(`${BASE}/admin/company-documents/${companyId}`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function checkSession() {
   const res = await fetch(`${BASE}/auth/check-session`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function verifyCompany(dto) {
@@ -617,22 +553,18 @@ export async function verifyCompany(dto) {
     credentials: 'include',
     body: JSON.stringify(dto)
   })
-
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 /* ===================== DYNAMIC REPORTS ===================== */
 
 export async function getReportConfigs() {
   const res = await fetch(`${BASE}/reports/config`, { credentials: "include" })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function getReportConfig(id) {
   const res = await fetch(`${BASE}/reports/config/${id}`, { credentials: "include" })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function createReportConfig(config) {
@@ -642,8 +574,7 @@ export async function createReportConfig(config) {
     credentials: "include",
     body: JSON.stringify(config)
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function updateReportConfig(id, config) {
@@ -653,8 +584,7 @@ export async function updateReportConfig(id, config) {
     credentials: "include",
     body: JSON.stringify(config)
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function generateReportData(id, request) {
@@ -664,8 +594,7 @@ export async function generateReportData(id, request) {
     credentials: "include",
     body: JSON.stringify(request)
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function downloadDynamicReport(id, format, filters) {
@@ -673,10 +602,8 @@ export async function downloadDynamicReport(id, format, filters) {
   const res = await fetch(`${BASE}/reports/export/${id}/${format}?filterJson=${filterJson}`, {
     credentials: "include"
   })
-
-  if (!res.ok) throw new Error(await res.text())
-
-  const blob = await res.blob()
+  
+  const blob = await handleResponse(res)
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
@@ -694,8 +621,7 @@ export async function encryptText(text) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text })
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }
 
 export async function decryptText(text) {
@@ -704,6 +630,5 @@ export async function decryptText(text) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text })
   })
-  if (!res.ok) throw new Error(await res.text())
-  return await res.json()
+  return handleResponse(res)
 }

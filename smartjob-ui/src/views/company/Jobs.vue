@@ -344,9 +344,8 @@ import {
   checkSession,
   getSetupCompanies
 } from "@/services/api"
-import { useNotification } from "@/composables/useNotification"
-
-const { notify } = useNotification()
+import { handleError, handleSuccess } from "@/utils/error-handler"
+// Remove local notify if using centralized handler
 
 const jobs = ref([])
 const loading = ref(false)
@@ -364,7 +363,7 @@ const fetchVerificationStatus = async () => {
       isVerified.value = current?.isCompanyVerified || false;
     }
   } catch (err) {
-    console.error("Verification check failed", err);
+    handleError(err, "Verification Check Failed")
   }
 }
 
@@ -441,7 +440,7 @@ const loadJobs = async () => {
   try {
     jobs.value = await getCompanyJobs()
   } catch (err) {
-    console.error("Error loading jobs:", err)
+    handleError(err, "Load Error")
   }
 }
 
@@ -496,7 +495,7 @@ const createJob = async () => {
     }
 
     await addCompanyJob(formData)
-    notify("Job Posted Successfully!", "success")
+    handleSuccess("Job Posted Successfully!")
 
     newJob.value = { 
       title: "", description: "", requiredSkills: "", jobType: "", 
@@ -507,7 +506,7 @@ const createJob = async () => {
     showAddJob.value = false
     await loadJobs()
   } catch (err) {
-    notify("Error: " + err.message, "error")
+    handleError(err, "Post Failed")
   } finally {
     loading.value = false
   }
@@ -540,11 +539,11 @@ const saveUpdateJob = async () => {
     }
 
     await updateCompanyJob(editingJob.value.jobId, formData)
-    notify("Listing Updated Successfully!", "success")
+    handleSuccess("Listing Updated Successfully!")
     showUpdateJob.value = false
     await loadJobs()
   } catch (err) {
-    notify("Error: " + err.message, "error")
+    handleError(err, "Update Failed")
   } finally {
     loading.value = false
   }

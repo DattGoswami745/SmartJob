@@ -133,9 +133,8 @@
 import { ref, onMounted, computed } from "vue"
 import { getCompanyJobs, getCompanyApplications, markCandidateAsPlaced } from "@/services/api"
 import { Search, ClipboardList, CheckCircle, Trophy, AlertTriangle } from "lucide-vue-next"
-import { useNotification } from "@/composables/useNotification"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
-const { notify } = useNotification()
 
 const jobs = ref([])
 const allApplications = ref([])
@@ -162,7 +161,7 @@ const fetchJobs = async () => {
   try {
     jobs.value = await getCompanyJobs()
   } catch (err) {
-    notify("Failed to load jobs", "error")
+    handleError(err, "Job Load Error")
   }
 }
 
@@ -170,7 +169,7 @@ const fetchApplications = async () => {
   try {
     allApplications.value = await getCompanyApplications()
   } catch (err) {
-    notify("Failed to load applications", "error")
+    handleError(err, "Application Load Error")
   }
 }
 
@@ -199,10 +198,10 @@ const handleMarkPlaced = async () => {
   
   try {
     await markCandidateAsPlaced(appId)
-    notify(`Successfully marked ${targetApp.value.fullName} as Placed!`, "success")
+    handleSuccess(`Successfully marked ${targetApp.value.fullName} as Placed!`)
     await fetchApplications() // Refresh list
   } catch (err) {
-    notify("Error marking placement: " + err.message, "error")
+    handleError(err, "Placement Error")
   } finally {
     processingId.value = null
     targetApp.value = null

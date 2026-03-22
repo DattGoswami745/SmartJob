@@ -72,6 +72,7 @@
 import { ref, onMounted } from "vue"
 import { getMyApplications } from "../services/api"
 import { Briefcase, FileX, Clock, Calendar } from "lucide-vue-next"
+import { handleError } from "@/utils/error-handler"
 
 const applications = ref([])
 
@@ -79,7 +80,7 @@ onMounted(async () => {
   try {
     applications.value = await getMyApplications()
   } catch (err) {
-    console.error("Failed to load applications", err)
+    handleError(err, "Load Error")
   }
 })
 

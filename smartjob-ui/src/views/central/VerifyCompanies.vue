@@ -118,10 +118,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { getCentralCompanies, getCompanyVerificationDocuments, verifyCompany, API_HOST } from "@/services/api";
-import { useNotification } from "@/composables/useNotification";
+import { handleError, handleSuccess } from "@/utils/error-handler";
 import ResumeModal from "@/components/ResumeModal.vue";
 
-const { notify } = useNotification();
+
 const companies = ref([]);
 const documents = ref([]);
 const selectedCompany = ref(null);
@@ -146,7 +146,7 @@ const loadCompanies = async () => {
   try {
     companies.value = await getCentralCompanies();
   } catch (err) {
-    notify("Error loading companies: " + err.message, "error");
+    handleError(err, "Load Error");
   }
 };
 
@@ -160,7 +160,7 @@ const openDocsModal = async (company) => {
   try {
     documents.value = await getCompanyVerificationDocuments(company.companyId);
   } catch (err) {
-    notify("Error loading documents: " + err.message, "error");
+    handleError(err, "Document Load Error");
   } finally {
     loadingDocs.value = false;
   }
@@ -182,11 +182,11 @@ const handleVerify = async (isApproved) => {
       reason: isApproved ? "Approved by Admin" : verifyReason.value
     };
     await verifyCompany(dto);
-    notify(isApproved ? "Company approved!" : "Company rejected.", "success");
+    handleSuccess(isApproved ? "Company approved!" : "Company rejected.");
     loadCompanies();
     closeDocsModal();
   } catch (err) {
-    notify("Action failed: " + err.message, "error");
+    handleError(err, "Action Failed");
   } finally {
     verifying.value = false;
   }

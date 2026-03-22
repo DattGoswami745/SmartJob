@@ -181,6 +181,7 @@
 import { ref, onMounted, computed } from "vue"
 import { Briefcase, UserCheck, FileText, Plus } from "lucide-vue-next"
 import { getCompanyDashboardData } from "@/services/api"
+import { handleError } from "@/utils/error-handler"
 import { Line } from "vue-chartjs"
 import {
   Chart as ChartJS,
@@ -300,7 +301,7 @@ async function loadData() {
     
     chartReady.value = true
   } catch (err) {
-    console.error("Failed to load company dashboard data:", err)
+    handleError(err, "Dashboard Load Error")
   }
 }
 

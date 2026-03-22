@@ -1,17 +1,6 @@
 <template>
   <div class="user-dashboard-wrapper">
-    <!-- 🔔 TOP CENTER POPUP -->
-    <transition name="toast-slide">
-      <div
-        v-if="successMessage || errorMessage"
-        class="toast-msg shadow-lg align-items-center d-flex gap-2"
-        :class="successMessage ? 'success' : 'error'"
-      >
-        <CheckCircle2 v-if="successMessage" size="20" />
-        <AlertCircle v-if="errorMessage" size="20" />
-        <span>{{ successMessage || errorMessage }}</span>
-      </div>
-    </transition>
+<!-- Removed local toast in favor of centralized one -->
 
     <div class="dashboard-header mb-5">
       <h2 class="fw-bold m-0 gradient-text">My Profile</h2>
@@ -80,7 +69,7 @@
               <div class="col-12 mt-4">
                 <label class="form-label text-muted small fw-semibold mb-2">Resume (PDF or Word)</label>
                 <div class="d-flex align-items-center gap-3">
-                  <input type="file" ref="resumeInput" class="form-control premium-input flex-grow-1" style="max-width: 400px;" accept=".pdf,.doc,.docx" @change="uploadResume" />
+                  <input type="file" ref="resumeInput" class="form-control premium-input flex-grow-1" style="max-width: 400px;" accept=".pdf,.doc,.docx" @change="handleResumeUpload" />
                   <button v-if="profile.resumePath" @click="openResumeViewer" class="btn btn-outline-primary d-flex align-items-center gap-2">
                     <FileText size="18" /> View Current Resume
                   </button>
@@ -101,7 +90,7 @@
               </div>
 
               <div class="d-flex flex-wrap gap-2">
-                <transition-group name="skill-pop">
+                <transition-group name="skill-pop" tag="div" class="d-flex flex-wrap gap-2">
                   <button
                     v-for="skill in selectedSkills"
                     :key="skill"
@@ -146,7 +135,7 @@
             </div>
 
             <div class="border-top border-light pt-4 mt-2 d-flex justify-content-end">
-              <button class="btn btn-primary-gradient px-5 py-2 fw-bold d-flex align-items-center gap-2" @click="updateProfile">
+              <button class="btn btn-primary-gradient px-5 py-2 fw-bold d-flex align-items-center gap-2" @click="handleUpdateProfile">
                 <Save size="18" /> Save Changes
               </button>
             </div>
@@ -168,7 +157,8 @@
 <script setup>
 import { ref, computed, onMounted } from "vue"
 import { CheckCircle2, AlertCircle, UserCircle, Briefcase, Award, Search, Plus, X, Save, FileText } from "lucide-vue-next"
-import { API_HOST } from "@/services/api"
+import { getProfile, updateProfile, API_HOST } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import ResumeModal from "@/components/ResumeModal.vue"
 
 /* PROFILE */
@@ -183,10 +173,6 @@ const profile = ref({
 })
 
 const resumeInput = ref(null)
-
-/* 🔔 POPUP STATE */
-const successMessage = ref("")
-const errorMessage = ref("")
 
 /* 📄 RESUME VIEWER STATE */
 const isResumeModalOpen = ref(false)
@@ -217,70 +203,45 @@ const filteredSkills = computed(() => {
   )
 })
 
-function addSkill(skill) {
+const addSkill = (skill) => {
   selectedSkills.value.push(skill)
   skillSearch.value = ""
 }
 
-function removeSkill(skill) {
+const removeSkill = (skill) => {
   selectedSkills.value = selectedSkills.value.filter(s => s !== skill)
 }
 
 onMounted(async () => {
   try {
-    const res = await fetch(`${API_HOST}/api/profile`, {
-      credentials: "include"
-    })
-
-    if (!res.ok) return // Optional handling
-
-    const data = await res.json()
+    const data = await getProfile()
     profile.value = data
 
     if (data.skills) {
       selectedSkills.value = data.skills.split(",").map(s => s.trim()).filter(s => s)
     }
   } catch (err) {
-    console.error("Error loading profile:", err)
+    handleError(err, "Load Error")
   }
 })
 
-async function updateProfile() {
-  successMessage.value = ""
-  errorMessage.value = ""
-
-  profile.value.skills = selectedSkills.value.join(",")
-
+const handleUpdateProfile = async () => {
   try {
-    const res = await fetch(`${API_HOST}/api/profile`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(profile.value)
-    })
-
-    if (res.ok) {
-      successMessage.value = "Profile updated successfully!"
-      setTimeout(() => successMessage.value = "", 3000)
-    } else {
-      errorMessage.value = "Failed to update profile. Please try again."
-      setTimeout(() => errorMessage.value = "", 3000)
-    }
+    // Sync skills before update
+    profile.value.skills = selectedSkills.value.join(",")
+    await updateProfile(profile.value)
+    handleSuccess("Profile updated successfully!")
   } catch (err) {
-    errorMessage.value = "Network error. Failed to update."
-    setTimeout(() => errorMessage.value = "", 3000)
+    handleError(err, "Update Error")
   }
 }
 
-async function uploadResume(event) {
+const handleResumeUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
   const formData = new FormData()
   formData.append("file", file)
-
-  successMessage.value = ""
-  errorMessage.value = ""
 
   try {
     const res = await fetch(`${API_HOST}/api/profile/upload-resume`, {
@@ -292,18 +253,14 @@ async function uploadResume(event) {
     if (res.ok) {
       const data = await res.json()
       profile.value.resumePath = data.resumePath
-      successMessage.value = "Resume uploaded successfully!"
-      setTimeout(() => successMessage.value = "", 3000)
+      handleSuccess("Resume uploaded successfully!")
     } else {
       const errData = await res.json()
-      errorMessage.value = errData.message || "Failed to upload resume."
-      setTimeout(() => errorMessage.value = "", 3000)
-      // Reset input if failed so user can try again
+      handleError(errData.message || "Failed to upload resume", "Upload Error")
       if (resumeInput.value) resumeInput.value.value = ""
     }
   } catch (err) {
-    errorMessage.value = "Network error during upload."
-    setTimeout(() => errorMessage.value = "", 3000)
+    handleError(err, "Upload Error")
     if (resumeInput.value) resumeInput.value.value = ""
   }
 }
@@ -428,43 +385,7 @@ async function uploadResume(event) {
 .border-light { border-color: var(--border) !important; }
 .bg-light-subtle { background-color: var(--recent-bg) !important; }
 
-/* 🔔 TOP CENTER TOAST */
-.toast-msg {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 14px 24px;
-  border-radius: 12px;
-  font-weight: 600;
-  z-index: 9999;
-  font-size: 0.95rem;
-  letter-spacing: 0.3px;
-}
-
-.toast-msg.success {
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.toast-msg.error {
-  background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
 /* Transitions */
-.toast-slide-enter-active,
-.toast-slide-leave-active {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.toast-slide-enter-from,
-.toast-slide-leave-to {
-  opacity: 0;
-  transform: translate(-50%, -20px);
-}
-
 .skill-pop-enter-active,
 .skill-pop-leave-active {
   transition: all 0.3s ease;

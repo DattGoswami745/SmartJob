@@ -196,6 +196,7 @@
 <script>
 import { ref, onMounted, computed } from "vue"
 import { getAllApplications, deleteCentralApplication, getUserProfileForAdmin, API_HOST } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
@@ -233,7 +234,7 @@ export default {
         loading.value = true
         applications.value = await getAllApplications()
       } catch (err) {
-        alert("Error loading applications: " + err.message)
+        handleError(err, "Load Error")
       } finally {
         loading.value = false
       }
@@ -276,9 +277,10 @@ export default {
         submitting.value = true
         await deleteCentralApplication(appToDelete.value.applicationId)
         applications.value = applications.value.filter(a => a.applicationId !== appToDelete.value.applicationId)
+        handleSuccess("Application removed successfully")
         appToDelete.value = null
       } catch (err) {
-        alert("Error deleting application: " + err.message)
+        handleError(err, "Delete Error")
       } finally {
         submitting.value = false
       }

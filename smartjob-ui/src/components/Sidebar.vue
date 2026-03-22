@@ -42,6 +42,8 @@ import {
   ClipboardList,
   X
 } from "lucide-vue-next";
+import { logoutUser } from "@/services/api";
+import { handleError, handleSuccess } from "@/utils/error-handler";
 
 defineProps({
   isOpen: Boolean
@@ -60,9 +62,17 @@ const menu = [
 
 const router = useRouter();
 
-function logout() {
-  localStorage.clear();
-  router.push("/login");
+async function logout() {
+  try {
+    await logoutUser();
+    localStorage.clear();
+    handleSuccess("Logged out successfully");
+    router.push("/login");
+  } catch (err) {
+    handleError(err, "Logout Error");
+    localStorage.clear();
+    router.push("/login");
+  }
 }
 </script>
 

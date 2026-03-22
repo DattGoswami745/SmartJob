@@ -181,6 +181,7 @@ import { ref, onMounted, onUnmounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { signupUser, verifyEmail, resendOTP } from "../services/api"
 import { UserPlus, User as UserIcon, Mail, Lock, Eye, EyeOff, ShieldCheck, ArrowRight, AlertCircle, Clock, Briefcase } from "lucide-vue-next"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 
 
@@ -281,9 +282,11 @@ async function handleSignup() {
 
     // Show OTP Verify Modal
     showOtpModal.value = true
+    handleSuccess("Signup successful! Please verify your email.")
   } catch (err) {
+    handleError(err, "Signup Failed", true)
     errors.value.general =
-      err?.response?.data?.message || err.message || "Signup failed. Email might be in use."
+      err.message || "Signup failed. Email might be in use."
   } finally {
     isLoading.value = false
   }
@@ -302,8 +305,10 @@ async function handleVerifyOtp() {
     
     // Success - Go to Login
     showOtpModal.value = false
+    handleSuccess("Email verified successfully! You can now sign in.")
     router.push("/login")
   } catch (err) {
+    handleError(err, "Verification Failed", true)
     otpError.value = err.message || "Invalid OTP"
   } finally {
     isVerifying.value = false
@@ -315,10 +320,12 @@ async function handleResendOtp() {
   resendMessage.value = ""
   try {
     await resendOTP(email.value)
+    handleSuccess("New OTP sent to your email!")
     resendMessage.value = "New OTP sent!"
     startTimer()
     setTimeout(() => { resendMessage.value = "" }, 3000)
   } catch(err) {
+    handleError(err, "Resend Failed", true)
     otpError.value = err.message || "Failed to resend OTP"
   }
 }

@@ -149,6 +149,7 @@ import {
   Legend
 } from "chart.js"
 import { getCentralDashboardData } from "@/services/api"
+import { handleError } from "@/utils/error-handler"
 
 Chart.register(
   LineElement,
@@ -236,7 +237,7 @@ onMounted(async () => {
     }
 
   } catch (err) {
-    console.error("Central Dashboard load failed", err)
+    handleError(err, "Dashboard Load Error")
   }
 })
 </script>

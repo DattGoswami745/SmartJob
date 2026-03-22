@@ -265,6 +265,7 @@
 import { ref, computed, onMounted } from "vue"
 import { getJobs, applyJob, API_HOST } from "@/services/api"
 import { Briefcase, Search, X, MapPin, Filter, Calendar } from "lucide-vue-next"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const jobs = ref([])
 const isUserPlaced = ref(false)
@@ -279,13 +280,17 @@ const filters = ref({
 })
 
 onMounted(async () => {
-  const data = await getJobs()
-  // Data is now { jobs, isPlaced }
-  if (data.jobs) {
-    jobs.value = data.jobs
-    isUserPlaced.value = data.isPlaced || false
-  } else {
-    jobs.value = data
+  try {
+    const data = await getJobs()
+    // Data is now { jobs, isPlaced }
+    if (data.jobs) {
+      jobs.value = data.jobs
+      isUserPlaced.value = data.isPlaced || false
+    } else {
+      jobs.value = data
+    }
+  } catch (err) {
+    handleError(err, "Load Error")
   }
 })
 
@@ -324,12 +329,17 @@ function openInfo(job) {
 }
 
 async function apply(job) {
-  const success = await applyJob(job.jobId)
-  if (success) {
-    job.applied = true
-    if (selectedJob.value && selectedJob.value.jobId === job.jobId) {
-       selectedJob.value.applied = true
+  try {
+    const success = await applyJob(job.jobId)
+    if (success) {
+      job.applied = true
+      if (selectedJob.value && selectedJob.value.jobId === job.jobId) {
+         selectedJob.value.applied = true
+      }
+      handleSuccess(`Successfully applied for ${job.title}!`)
     }
+  } catch (err) {
+    handleError(err, "Application Failed")
   }
 }
 

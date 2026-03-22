@@ -90,16 +90,14 @@
       </div>
     </div>
 
-    <!-- Notification Toast (Simple) -->
-    <div v-if="toast" class="custom-toast bg-dark text-white p-3 rounded shadow animate-toast">
-      {{ toast }}
-    </div>
+    <!-- Removed local toast in favor of centralized one -->
   </div>
 </template>
 
 <script setup>
 import { ref } from "vue"
 import { encryptText, decryptText } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const encryptInput = ref("")
 const encryptOutput = ref("")
@@ -109,12 +107,7 @@ const decryptInput = ref("")
 const decryptOutput = ref("")
 const loadingDec = ref(false)
 
-const toast = ref("")
-
-const showToast = (msg) => {
-  toast.value = msg
-  setTimeout(() => { toast.value = "" }, 3000)
-}
+// Removed local toast helper
 
 const onEncrypt = async () => {
   try {
@@ -122,9 +115,9 @@ const onEncrypt = async () => {
     encryptOutput.value = ""
     const res = await encryptText(encryptInput.value)
     encryptOutput.value = res.result
-    showToast("Encryption successful!")
+    handleSuccess("Encryption successful!")
   } catch (err) {
-    alert("Encryption failed: " + err.message)
+    handleError(err, "Encryption Failed")
   } finally {
     loadingEnc.value = false
   }
@@ -136,9 +129,9 @@ const onDecrypt = async () => {
     decryptOutput.value = ""
     const res = await decryptText(decryptInput.value)
     decryptOutput.value = res.result
-    showToast("Decryption successful!")
+    handleSuccess("Decryption successful!")
   } catch (err) {
-    alert("Decryption failed: " + err.message)
+    handleError(err, "Decryption Failed")
   } finally {
     loadingDec.value = false
   }
@@ -146,7 +139,7 @@ const onDecrypt = async () => {
 
 const copyToClipboard = (text) => {
   navigator.clipboard.writeText(text)
-  showToast("Copied to clipboard!")
+  handleSuccess("Copied to clipboard!")
 }
 </script>
 
@@ -231,20 +224,4 @@ const copyToClipboard = (text) => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.custom-toast {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-}
-
-.animate-toast {
-  animation: slideUpFade 0.3s ease-out;
-}
-
-@keyframes slideUpFade {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
 </style>

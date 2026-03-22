@@ -187,7 +187,7 @@
 <script>
 import { ref, onMounted, computed } from "vue"
 import { getCompanyApplications, deleteCompanyApplication, getUserProfileForCompany, API_HOST } from "@/services/api"
-import { useNotification } from "@/composables/useNotification"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
@@ -196,7 +196,6 @@ export default {
     const applications = ref([])
     const loading = ref(true)
     const submitting = ref(false)
-    const { notify } = useNotification()
 
     // Filters
     const searchQuery = ref("")
@@ -225,7 +224,7 @@ export default {
         loading.value = true
         applications.value = await getCompanyApplications()
       } catch (err) {
-        notify("Error loading applications: " + err.message, "error")
+        handleError(err, "Load Error")
       } finally {
         loading.value = false
       }
@@ -271,10 +270,10 @@ export default {
         submitting.value = true
         await deleteCompanyApplication(appToDelete.value.applicationId)
         applications.value = applications.value.filter(a => a.applicationId !== appToDelete.value.applicationId)
-        notify("Application removed successfully")
+        handleSuccess("Application removed successfully")
         appToDelete.value = null
       } catch (err) {
-        notify("Error deleting: " + err.message, "error")
+        handleError(err, "Delete Error")
       } finally {
         submitting.value = false
       }

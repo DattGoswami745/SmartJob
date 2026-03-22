@@ -249,6 +249,7 @@ import {
  } from "@/services/api"
 import { useNotification } from "@/composables/useNotification"
 import { useConfirm } from "@/composables/useConfirm"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import ResumeModal from "@/components/ResumeModal.vue"
 
 export default {
@@ -283,8 +284,9 @@ export default {
       try {
         loading.value = true
         jobs.value = await getCentralJobs("All")
+        // handleSuccess removed
       } catch (err) {
-        notify("Error loading jobs: " + err.message, "error")
+        handleError(err, "Load Error", true)
       } finally {
         loading.value = false
       }
@@ -293,8 +295,9 @@ export default {
     const loadCompanies = async () => {
       try {
         companies.value = await getCentralCompanies()
+        // handleSuccess removed
       } catch (err) {
-        notify("Error loading companies: " + err.message, "error")
+        handleError(err, "Load Error", true)
       }
     }
 
@@ -303,10 +306,10 @@ export default {
       try {
         loading.value = true
         await approveJob(jobId)
-        notify("Job Approved Successfully", "success")
+        // handleSuccess removed
         await loadJobs()
       } catch (err) {
-        notify("Approval failed: " + err.message, "error")
+        handleError(err, "Approval failed", true)
       } finally {
         loading.value = false
       }
@@ -317,10 +320,9 @@ export default {
       try {
         loading.value = true
         await rejectJob(jobId)
-        notify("Job Rejected Successfully", "success")
         await loadJobs()
       } catch (err) {
-        notify("Rejection failed: " + err.message, "error")
+        handleError(err, "Rejection failed", true)
       } finally {
         loading.value = false
       }
@@ -331,10 +333,10 @@ export default {
       try {
         loading.value = true
         await restoreJob(jobId)
-        notify("Job Restored Successfully", "success")
+        // handleSuccess removed
         await loadJobs()
       } catch (err) {
-        notify("Restoration failed: " + err.message, "error")
+        handleError(err, "Restoration failed", true)
       } finally {
         loading.value = false
       }

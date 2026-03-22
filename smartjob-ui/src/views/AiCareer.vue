@@ -118,6 +118,7 @@
 import { ref, onMounted, nextTick } from "vue"
 import draggable from "vuedraggable"
 import { getResumeSuggestions, downloadResumeFile } from "../services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 import { useNotification } from "@/composables/useNotification"
 import { useConfirm } from "@/composables/useConfirm"
 
@@ -164,8 +165,7 @@ async function refreshSuggestions() {
     availableItems.value = newSuggestions
   }
   catch(err){
-    console.error("AI Error:", err)
-    notify("AI failed to generate suggestions: " + err.message, "error")
+    handleError(err, "AI Error")
   }
   finally{
     loading.value = false
@@ -219,8 +219,9 @@ async function handleDownload(){
     link.href = window.URL.createObjectURL(blob)
     link.download = `${resume.value.fullName.replace(/\s+/g, '_')}_Resume.docx`
     link.click()
+    handleSuccess("Resume template generated!")
   }catch(err){
-    notify("Download failed: " + err.message, "error")
+    handleError(err, "Download Failed")
   }
 }
 </script>

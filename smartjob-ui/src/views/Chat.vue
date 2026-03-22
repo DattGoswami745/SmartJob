@@ -35,7 +35,7 @@
               <div v-else class="d-flex align-items-center justify-content-end gap-2 mb-1 text-white fw-bold small opacity-75">
                 <User size="14" /> You
               </div>
-              <div class="message-text lh-base">{{ msg.content }}</div>
+              <div class="message-text lh-base" v-html="formatMessage(msg.content)"></div>
             </div>
           </div>
 
@@ -79,13 +79,14 @@
 import { ref, nextTick } from "vue"
 import { sendGeminiMessage } from "../services/api"
 import { Sparkles, Send, User, MessageSquare } from "lucide-vue-next"
+import { handleError } from "@/utils/error-handler"
 
 const userMessage = ref("")
 const messages = ref([])
 const loading = ref(false)
 const chatBox = ref(null)
 
-async function sendMessage() {
+const sendMessage = async () => {
   if (!userMessage.value.trim() || loading.value) return
 
   const question = userMessage.value
@@ -98,12 +99,17 @@ async function sendMessage() {
   try {
     const response = await sendGeminiMessage(question)
 
+    const cleanedResponse = response
+      .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold markers
+      .replace(/(^|\n)\* /g, "$1• ")     // Convert bullet asterisks to bullet symbols
+      .replace(/\*(.*?)\*/g, "$1")       // Remove italic markers
     messages.value.push({
       role: "assistant",
-      content: response
+      content: cleanedResponse
     })
     scrollToBottom()
   } catch (err) {
+    handleError(err, "Chat Error")
     messages.value.push({
       role: "assistant",
       content: "Gemini failed to respond. Please try again."
@@ -114,7 +120,31 @@ async function sendMessage() {
   loading.value = false
 }
 
-async function scrollToBottom() {
+const formatMessage = (text) => {
+  if (!text) return ""
+  
+  // Basic HTML Escaping for safety
+  let escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+
+  // 1. Bold: **text** -> <strong>text</strong>
+  escaped = escaped.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+
+  // 2. Bullets: * at start of line -> •
+  escaped = escaped.replace(/(^|\n)\* /g, "$1• ")
+
+  // 3. Italics: *text* -> <em>text</em> (only if not a bullet)
+  escaped = escaped.replace(/\*(.*?)\*/g, "<em>$1</em>")
+
+  // 4. Newlines: \n -> <br>
+  escaped = escaped.replace(/\n/g, "<br>")
+
+  return escaped
+}
+
+const scrollToBottom = async () => {
   await nextTick()
   if (chatBox.value) {
     chatBox.value.scrollTo({

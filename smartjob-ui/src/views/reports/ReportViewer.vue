@@ -142,6 +142,7 @@
 import { ref, onMounted, computed, watch } from "vue"
 import { useRoute } from "vue-router"
 import { getReportConfigs, generateReportData, downloadDynamicReport } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const route = useRoute()
 const reportConfigs = ref([])
@@ -170,7 +171,7 @@ onMounted(async () => {
       generateReport()
     }
   } catch (err) {
-    console.error("Error loading configs:", err)
+    handleError(err, "Config Load Error")
   }
 })
 
@@ -198,8 +199,9 @@ const generateReport = async () => {
     })
     reportData.value = res
     currentPage.value = 1
+    handleSuccess("Report generated!")
   } catch (err) {
-    alert("Error generating report: " + err.message)
+    handleError(err, "Generation Error")
   } finally {
     reportLoading.value = false
   }
@@ -249,8 +251,9 @@ const paginatedData = computed(() => filteredData.value.slice(startIdx.value, en
 const exportReport = async (format) => {
   try {
     await downloadDynamicReport(selectedReportId.value, format, {})
+    handleSuccess(`Exported to ${format.toUpperCase()}`)
   } catch (err) {
-    alert("Export failed: " + err.message)
+    handleError(err, "Export Failed")
   }
 }
 

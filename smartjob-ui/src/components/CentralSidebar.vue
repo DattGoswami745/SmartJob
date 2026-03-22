@@ -39,6 +39,8 @@ import {
   LogOut,
   ShieldCheck
 } from "lucide-vue-next"
+import { logoutUser } from "@/services/api"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const router = useRouter()
 
@@ -54,9 +56,18 @@ const menu = [
 ]
 
 /* Logout */
-function logout() {
-  localStorage.removeItem("isLoggedIn")
-  router.push("/login")
+async function logout() {
+  try {
+    await logoutUser()
+    localStorage.clear()
+    handleSuccess("Logged out successfully")
+    router.push("/login")
+  } catch (err) {
+    handleError(err, "Logout Error")
+    // Still redirect even if API fails, as local session is cleared
+    localStorage.clear()
+    router.push("/login")
+  }
 }
 </script>
 

@@ -96,11 +96,10 @@
 <script>
 import { ref, onMounted } from "vue"
 import { getCompanyJobs, downloadJobReport, downloadCompanyApplicationsReport } from "@/services/api"
-import { useNotification } from "@/composables/useNotification"
+import { handleError, handleSuccess } from "@/utils/error-handler"
 
 export default {
   setup() {
-    const { notify } = useNotification()
     const showReportModal = ref(false)
     const reportType = ref("all")
     const selectedJobId = ref("")
@@ -111,7 +110,7 @@ export default {
       try {
         jobs.value = await getCompanyJobs()
       } catch (err) {
-        console.error("Error loading jobs", err)
+        handleError(err, "Load Error")
       }
     }
 
@@ -130,10 +129,10 @@ export default {
         } else {
           await downloadJobReport(selectedJobId.value)
         }
-        notify("Report generated successfully!", "success")
+        handleSuccess("Report generated successfully!")
         closeModal()
       } catch (err) {
-        notify("Error generating report: " + err.message, "error")
+        handleError(err, "Generation Failed")
       } finally {
         downloading.value = false
       }
