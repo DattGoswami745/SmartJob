@@ -162,7 +162,7 @@
             <div class="resume-section mt-4" v-if="profileData.resumePath">
               <h5>Resume</h5>
               <button @click="openResumeViewer" class="download-resume-btn border-0 w-auto px-4">
-                <i class="bi bi-file-earmark-pdf"></i> View Resume
+                <i class="bi bi-file-earmark-pdf"></i> {{ profileData.resumeFileName || 'View Resume' }}
               </button>
             </div>
           </div>

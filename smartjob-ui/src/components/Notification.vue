@@ -76,12 +76,7 @@ const { notifications, removeNotification } = useNotification()
 }
 .info i { color: #3b82f6; }
 
-/* Dark mode support */
-:deep(body.theme-dark) .notification-toast {
-  background: #1e293b;
-  color: #f8fafc;
-  border-color: #334155;
-}
+
 
 .close-btn {
   background: transparent;
@@ -101,9 +96,7 @@ const { notifications, removeNotification } = useNotification()
   color: #64748b;
 }
 
-:deep(body.theme-dark) .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
+
 
 /* Animations */
 .notification-enter-active,

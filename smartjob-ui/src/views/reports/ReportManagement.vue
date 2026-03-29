@@ -93,15 +93,18 @@
                 <tbody>
                   <tr v-for="report in reports" :key="report.reportId">
                     <td class="fw-bold">{{ report.reportName }}</td>
-                    <td><span class="badge bg-secondary">{{ report.baseTable }}</span></td>
+                    <td><span class="badge bg-secondary">{{ getSourceLabel(report.baseTable) }}</span></td>
                     <td>{{ parseFields(report.selectedFields).length }} fields</td>
                     <td class="small">{{ new Date(report.createdAt).toLocaleDateString() }}</td>
                     <td class="text-end">
                       <button class="btn btn-sm btn-outline-primary me-2" @click="editReport(report)">
                         <i class="bi bi-pencil-square"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-info" @click="viewReport(report)">
+                      <button class="btn btn-sm btn-outline-info me-2" @click="viewReport(report)">
                         <i class="bi bi-eye"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" @click="confirmDelete(report)">
+                        <i class="bi bi-trash"></i>
                       </button>
                     </td>
                   </tr>
@@ -121,7 +124,7 @@
 <script setup>
 import { ref, onMounted, watch } from "vue"
 import { useRouter } from "vue-router"
-import { getReportConfigs, createReportConfig, updateReportConfig } from "@/services/api"
+import { getReportConfigs, createReportConfig, updateReportConfig, deleteReportConfig } from "@/services/api"
 import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const router = useRouter()
@@ -140,28 +143,37 @@ const form = ref({
 const selectedFields = ref([])
 
 const availableTables = [
-  { id: "Jobs", label: "Jobs" },
-  { id: "Applications", label: "Job Applications" },
+  { 
+    id: "(SELECT j.JobId, j.Title AS JobTitle, c.CompanyName AS CompanyName, j.JobType AS JobType, j.SalaryRange AS SalaryRange, j.PostedDate AS PostedDate, j.CompanyId AS CompanyId FROM Jobs j LEFT JOIN Companies c ON j.CompanyId = c.CompanyId) AS JobReport", 
+    label: "Jobs" 
+  },
+  { 
+    id: "(SELECT a.ApplicationId, u.FullName AS UserName, u.Email AS UserEmail, j.Title AS JobTitle, c.CompanyName AS CompanyName, a.AppliedDate AS AppliedDate, a.ApplicationStatus AS Status, j.CompanyId AS CompanyId FROM Applications a JOIN Users u ON a.UserId = u.UserId JOIN Jobs j ON a.JobId = j.JobId LEFT JOIN Companies c ON j.CompanyId = c.CompanyId) AS AppReport", 
+    label: "Applications" 
+  },
   { id: "Users", label: "User Accounts" },
   { id: "Companies", label: "Companies" }
 ]
 
 const tableFields = {
-  Jobs: [
+  "(SELECT j.JobId, j.Title AS JobTitle, c.CompanyName AS CompanyName, j.JobType AS JobType, j.SalaryRange AS SalaryRange, j.PostedDate AS PostedDate, j.CompanyId AS CompanyId FROM Jobs j LEFT JOIN Companies c ON j.CompanyId = c.CompanyId) AS JobReport": [
     { id: "JobId", label: "Job ID", type: "number" },
-    { id: "Title", label: "Title", type: "string" },
+    { id: "JobTitle", label: "Job Title", type: "string" },
+    { id: "CompanyName", label: "Company Name", type: "string" },
     { id: "JobType", label: "Job Type", type: "string" },
     { id: "SalaryRange", label: "Salary Range", type: "string" },
     { id: "PostedDate", label: "Posted Date", type: "date" },
-    { id: "IsActive", label: "Is Active", type: "boolean" },
-    { id: "IsApproved", label: "Is Approved", type: "boolean" }
+    { id: "CompanyId", label: "Company ID", type: "number" }
   ],
-  Applications: [
+  "(SELECT a.ApplicationId, u.FullName AS UserName, u.Email AS UserEmail, j.Title AS JobTitle, c.CompanyName AS CompanyName, a.AppliedDate AS AppliedDate, a.ApplicationStatus AS Status, j.CompanyId AS CompanyId FROM Applications a JOIN Users u ON a.UserId = u.UserId JOIN Jobs j ON a.JobId = j.JobId LEFT JOIN Companies c ON j.CompanyId = c.CompanyId) AS AppReport": [
     { id: "ApplicationId", label: "App ID", type: "number" },
+    { id: "UserName", label: "User Name", type: "string" },
+    { id: "UserEmail", label: "User Email", type: "string" },
+    { id: "JobTitle", label: "Job Title", type: "string" },
+    { id: "CompanyName", label: "Company Name", type: "string" },
     { id: "AppliedDate", label: "Applied Date", type: "date" },
-    { id: "ApplicationStatus", label: "Status", type: "string" },
-    { id: "UserId", label: "User ID", type: "number" },
-    { id: "JobId", label: "Job ID", type: "number" }
+    { id: "Status", label: "Status", type: "string" },
+    { id: "CompanyId", label: "Company ID", type: "number" }
   ],
   Users: [
     { id: "UserId", label: "User ID", type: "number" },
@@ -230,6 +242,26 @@ const editReport = (report) => {
   form.value = { ...report }
   selectedFields.value = JSON.parse(report.selectedFields)
   currentFields.value = tableFields[report.baseTable] || []
+}
+
+const confirmDelete = async (report) => {
+  if (confirm(`Are you sure you want to delete the report "${report.reportName}"?`)) {
+    try {
+      loading.value = true
+      await deleteReportConfig(report.reportId)
+      handleSuccess("Report deleted successfully!")
+      await loadReports()
+    } catch (err) {
+      handleError(err, "Delete Error")
+    } finally {
+      loading.value = false
+    }
+  }
+}
+
+const getSourceLabel = (baseTable) => {
+  const table = availableTables.find(t => t.id === baseTable)
+  return table ? table.label : baseTable
 }
 
 const resetForm = () => {

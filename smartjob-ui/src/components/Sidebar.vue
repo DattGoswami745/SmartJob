@@ -111,8 +111,8 @@ async function logout() {
   transform: translateX(4px);
 }
 
-.sidebar-link.router-link-active {
-  background-color: #3b82f6;
+.sidebar-link.router-link-exact-active {
+  background-color: #3b82f6 !important;
   color: white !important;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }

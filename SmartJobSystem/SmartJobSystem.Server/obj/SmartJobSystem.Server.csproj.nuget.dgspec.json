@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj": {}
+    "c:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj": {
+    "c:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj",
+        "projectUniqueName": "c:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj",
         "projectName": "SmartJobSystem.Server",
-        "projectPath": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj",
+        "projectPath": "c:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\SmartJobSystem.Server.csproj",
         "packagesPath": "C:\\Users\\Datt Goswami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\obj\\",
+        "outputPath": "c:\\Users\\Datt Goswami\\OneDrive\\Desktop\\smartjob\\SmartJobSystem\\SmartJobSystem.Server\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -30,7 +30,6 @@
         },
         "frameworks": {
           "net8.0": {
-            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -44,12 +43,10 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "10.0.200"
+        }
       },
       "frameworks": {
         "net8.0": {
-          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "DinkToPdf": {
@@ -112,7 +109,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.200/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.418/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

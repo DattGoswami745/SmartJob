@@ -13,6 +13,19 @@ namespace SmartJobSystem.Server.Data
             _connectionString = config.GetConnectionString("DefaultConnection");
         }
 
+        /* ===================== PARAMETERS ===================== */
+
+        public async Task<string?> GetParameterValueAsync(string key)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("SELECT ParamValue FROM Parameters WHERE ParamKey = @ParamKey", con);
+            cmd.Parameters.Add("@ParamKey", SqlDbType.NVarChar).Value = key;
+
+            await con.OpenAsync();
+            var result = await cmd.ExecuteScalarAsync();
+            return result?.ToString();
+        }
+
         /* ===================== CONNECTION ===================== */
 
         public SqlConnection GetConnection()
@@ -473,7 +486,8 @@ namespace SmartJobSystem.Server.Data
                     ExperienceYears, 
                     Education, 
                     PreferredLocation, 
-                    ResumePath
+                    ResumePath,
+                    ResumeFileName
                 FROM UserProfiles
                 WHERE UserId = @UserId
             ", con);
@@ -493,7 +507,8 @@ namespace SmartJobSystem.Server.Data
                     ExperienceYears = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
                     Education = reader.IsDBNull(4) ? null : reader.GetString(4),
                     PreferredLocation = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    ResumePath = reader.IsDBNull(6) ? null : reader.GetString(6)
+                    ResumePath = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    ResumeFileName = reader.IsDBNull(7) ? null : reader.GetString(7)
                 };
             }
 
@@ -1204,6 +1219,15 @@ namespace SmartJobSystem.Server.Data
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
+        public async Task<bool> DeleteReportConfigurationAsync(int reportId)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("UPDATE ReportConfigurations SET IsActive = 0 WHERE ReportId = @Id", con);
+            cmd.Parameters.AddWithValue("@Id", reportId);
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
         public async Task<List<IDictionary<string, object>>> GetDynamicReportDataAsync(string baseTable, string[] selectedFields, string? filterClause, Dictionary<string, object> parameters)
         {
             var data = new List<IDictionary<string, object>>();
@@ -1252,4 +1276,4 @@ namespace SmartJobSystem.Server.Data
             await cmd.ExecuteNonQueryAsync();
         }
     }
-}
+}

@@ -29,7 +29,7 @@
             <label class="form-label small fw-bold text-muted text-uppercase">Select Report Type</label>
             <select v-model="selectedReportId" class="form-select" @change="onReportSelect">
               <option value="" disabled>Choose a report configuration...</option>
-              <option v-for="r in reportConfigs" :key="r.reportId" :value="r.reportId">{{ r.reportName }}</option>
+              <option v-for="r in filteredReportConfigs" :key="r.reportId" :value="r.reportId">{{ r.reportName }}</option>
             </select>
           </div>
           
@@ -146,6 +146,18 @@ import { handleError, handleSuccess } from "@/utils/error-handler"
 
 const route = useRoute()
 const reportConfigs = ref([])
+const userRole = ref(localStorage.getItem("userRole") || "")
+
+const filteredReportConfigs = computed(() => {
+  if (userRole.value === "Central") return reportConfigs.value
+  
+  // For Company users, only show Job and Application related reports
+  return reportConfigs.value.filter(r => {
+    const table = r.baseTable.toLowerCase()
+    return table.includes("jobreport") || table.includes("appreport") || 
+           table.includes("jobs") || table.includes("applications")
+  })
+})
 const selectedReportId = ref("")
 const selectedReportConfig = ref(null)
 const reportData = ref(null)
@@ -267,8 +279,9 @@ const formatDate = (dateStr) => {
 
 const formatValue = (val, type) => {
   if (val === null || val === undefined) return "N/A"
-  if (type === 'date' || (typeof val === 'string' && val.includes('T'))) {
-    return new Date(val).toLocaleDateString()
+  if (type === 'date' || (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val))) {
+    const date = new Date(val)
+    return isNaN(date.getTime()) ? val : date.toLocaleDateString()
   }
   if (typeof val === 'boolean') {
     return val ? "Yes" : "No"

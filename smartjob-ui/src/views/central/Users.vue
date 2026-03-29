@@ -5,7 +5,23 @@
       <div class="header-left">
         <h2>Manage Users</h2>
       </div>
-      <div class="header-right">
+      <div class="header-right d-flex gap-3">
+        <!-- TABS -->
+        <div class="custom-tabs">
+          <button 
+            :class="['tab-btn', activeTab === 'individual' ? 'active' : '']" 
+            @click="activeTab = 'individual'"
+          >
+            <i class="bi bi-people-fill"></i> Individual Users
+          </button>
+          <button 
+            :class="['tab-btn', activeTab === 'company' ? 'active' : '']" 
+            @click="activeTab = 'company'"
+          >
+            <i class="bi bi-building-fill"></i> Company Accounts
+          </button>
+        </div>
+
         <input 
           type="text" 
           v-model="searchUser" 
@@ -21,7 +37,7 @@
         <table class="app-table">
           <thead>
             <tr>
-              <th>Full Name</th>
+              <th>{{ activeTab === 'individual' ? 'Full Name' : 'Company Name' }}</th>
               <th>Email</th>
               <th>Role</th>
               <th>Joined Date</th>
@@ -211,6 +227,7 @@ export default {
     const users = ref([])
     const searchUser = ref("")
     const loading = ref(false)
+    const activeTab = ref("individual") // 'individual' or 'company'
 
     // Modals State
     const showDeleteModal = ref(false)
@@ -321,16 +338,21 @@ export default {
     const filteredUsers = computed(() => {
       let filtered = users.value
       
-      // Show end users and company managers
-      filtered = filtered.filter(u => u.role === 'User' || u.role === 'Company')
+      // Filter by Search Term first
+      const searchTerm = searchUser.value.toLowerCase().trim()
+      if (searchTerm) {
+        filtered = filtered.filter(u => 
+          u.fullName?.toLowerCase().includes(searchTerm) || 
+          u.email?.toLowerCase().includes(searchTerm)
+        )
+      }
 
-      if (!searchUser.value.trim()) return filtered
-      
-      const searchTerm = searchUser.value.toLowerCase()
-      return filtered.filter(u => 
-        u.fullName?.toLowerCase().includes(searchTerm) || 
-        u.email?.toLowerCase().includes(searchTerm)
-      )
+      // Then filter by active tab role
+      if (activeTab.value === "individual") {
+        return filtered.filter(u => u.role === 'User')
+      } else {
+        return filtered.filter(u => u.role === 'Company')
+      }
     })
 
     const formatDate = (dateString) => {
@@ -386,7 +408,8 @@ export default {
       formatDetailedDate,
       isResumeModalOpen,
       resumeViewerUrl,
-      openResumeViewer
+      openResumeViewer,
+      activeTab
     }
   }
 }
@@ -432,6 +455,41 @@ export default {
   width: 250px;
   font-size: 14px;
   transition: all 0.2s;
+}
+
+/* Custom Tabs */
+.custom-tabs {
+  display: flex;
+  background: var(--recent-bg);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: white;
+  color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.tab-btn:hover:not(.active) {
+  background: rgba(0,0,0,0.03);
+  color: var(--text-primary);
 }
 
 .search-input:focus {

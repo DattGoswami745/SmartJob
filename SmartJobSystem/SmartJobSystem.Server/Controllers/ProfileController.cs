@@ -24,7 +24,7 @@ namespace SmartJobAPI.Controllers
            GET PROFILE (SESSION BASED)
         ================================= */
         [HttpGet]
-        public IActionResult GetProfile()
+        public async Task<IActionResult> GetProfile()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -32,7 +32,7 @@ namespace SmartJobAPI.Controllers
 
             using SqlConnection con =
                 new(_config.GetConnectionString("DefaultConnection"));
-            con.Open();
+            await con.OpenAsync();
 
             var cmd = new SqlCommand(@"
                 SELECT 
@@ -43,7 +43,8 @@ namespace SmartJobAPI.Controllers
                     p.ExperienceYears,
                     p.Education,
                     p.PreferredLocation,
-                    p.ResumePath
+                    p.ResumePath,
+                    p.ResumeFileName
                 FROM dbo.Users u
                 LEFT JOIN dbo.UserProfiles p ON u.UserId = p.UserId
                 WHERE u.UserId = @UserId
@@ -51,12 +52,13 @@ namespace SmartJobAPI.Controllers
 
             cmd.Parameters.AddWithValue("@UserId", userId);
 
-            using var reader = cmd.ExecuteReader();
-            if (!reader.Read())
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
                 return NotFound();
 
             string resumePath = reader["ResumePath"]?.ToString() ?? "";
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            string resumeFileName = reader["ResumeFileName"]?.ToString() ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             // Decrypt ResumePath if it exists and looks encrypted
             if (!string.IsNullOrEmpty(resumePath) && !resumePath.StartsWith("/api/"))
@@ -74,7 +76,8 @@ namespace SmartJobAPI.Controllers
                 experienceYears = reader["ExperienceYears"] == DBNull.Value ? 0 : (int)reader["ExperienceYears"],
                 education = reader["Education"]?.ToString() ?? "",
                 preferredLocation = reader["PreferredLocation"]?.ToString() ?? "",
-                resumePath = resumePath
+                resumePath = resumePath,
+                resumeFileName = resumeFileName
             });
         }
 
@@ -82,7 +85,7 @@ namespace SmartJobAPI.Controllers
            UPDATE PROFILE
         ================================= */
         [HttpPut]
-        public IActionResult UpdateProfile([FromBody] UserProfileDto dto)
+        public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -90,14 +93,14 @@ namespace SmartJobAPI.Controllers
 
             using SqlConnection con =
                 new(_config.GetConnectionString("DefaultConnection"));
-            con.Open();
+            await con.OpenAsync();
 
             // Check if profile exists
             var check = new SqlCommand(
                 "SELECT COUNT(*) FROM dbo.UserProfiles WHERE UserId=@UserId", con);
             check.Parameters.AddWithValue("@UserId", userId);
 
-            int exists = (int)check.ExecuteScalar();
+            int exists = (int)await check.ExecuteScalarAsync();
 
             SqlCommand cmd;
 
@@ -131,7 +134,7 @@ namespace SmartJobAPI.Controllers
             cmd.Parameters.AddWithValue("@Education", dto.Education ?? "");
             cmd.Parameters.AddWithValue("@PreferredLocation", dto.PreferredLocation ?? "");
             string resumePathToSave = dto.ResumePath ?? "";
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             // Always encrypt before saving back to DB
             if (!string.IsNullOrEmpty(resumePathToSave))
@@ -143,7 +146,7 @@ namespace SmartJobAPI.Controllers
 
             cmd.Parameters.AddWithValue("@ResumePath", resumePathToSave);
 
-            cmd.ExecuteNonQuery();
+            await cmd.ExecuteNonQueryAsync();
 
             return Ok(new { message = "Profile updated successfully" });
         }
@@ -170,7 +173,7 @@ namespace SmartJobAPI.Controllers
             await file.CopyToAsync(ms);
             byte[] fileBytes = ms.ToArray();
 
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             // ENCRYPT THE FILE BEFORE SAVING
             byte[] encryptedFileBytes = SecurityHelper.EncryptBytes(fileBytes, encryptionKey);
@@ -188,11 +191,11 @@ namespace SmartJobAPI.Controllers
             var encryptedDownloadPath = SecurityHelper.Encrypt(downloadPathPlain, encryptionKey);
             
             using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
-            con.Open();
+            await con.OpenAsync();
             var updatePathCmd = new SqlCommand("UPDATE dbo.UserProfiles SET ResumePath=@ResumePath WHERE UserId=@UserId", con);
             updatePathCmd.Parameters.AddWithValue("@UserId", userId);
             updatePathCmd.Parameters.AddWithValue("@ResumePath", encryptedDownloadPath);
-            updatePathCmd.ExecuteNonQuery();
+            await updatePathCmd.ExecuteNonQueryAsync();
 
             return Ok(new { message = "Resume uploaded successfully (Encrypted).", resumePath = downloadPathPlain });
         }
@@ -225,7 +228,7 @@ namespace SmartJobAPI.Controllers
             if (resume == null || resume.FileContent == null)
                 return NotFound(new { message = "Resume not found in database." });
 
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             // DECRYPT THE FILE CONTENT
             byte[] decryptedFileBytes;

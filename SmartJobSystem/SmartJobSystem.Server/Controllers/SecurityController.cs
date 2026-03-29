@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartJobSystem.Server.Helpers;
 using Microsoft.Extensions.Configuration;
+using SmartJobSystem.Server.Data;
 
 namespace SmartJobSystem.Server.Controllers
 {
@@ -8,22 +9,25 @@ namespace SmartJobSystem.Server.Controllers
     [ApiController]
     public class SecurityController : ControllerBase
     {
-        private readonly string _encryptionKey;
+        private readonly DbHelper _db;
 
-        public SecurityController(IConfiguration config)
+        public SecurityController(DbHelper db)
         {
-            _encryptionKey = config["SecuritySettings:EncryptionKey"] ?? "default_key_12345678901234567890";
+            _db = db;
         }
 
         [HttpPost("encrypt")]
-        public IActionResult Encrypt([FromBody] SecurityRequest request)
+        public async Task<IActionResult> Encrypt([FromBody] SecurityRequest request)
         {
             if (string.IsNullOrEmpty(request.Text))
                 return BadRequest("Text to encrypt is required.");
 
             try
             {
-                string encrypted = SecurityHelper.Encrypt(request.Text, _encryptionKey);
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? "default_key_12345678901234567890";
+                
+                string encrypted = SecurityHelper.Encrypt(request.Text, encryptionKey);
                 return Ok(new { Result = encrypted });
             }
             catch (Exception ex)
@@ -33,14 +37,17 @@ namespace SmartJobSystem.Server.Controllers
         }
 
         [HttpPost("decrypt")]
-        public IActionResult Decrypt([FromBody] SecurityRequest request)
+        public async Task<IActionResult> Decrypt([FromBody] SecurityRequest request)
         {
             if (string.IsNullOrEmpty(request.Text))
                 return BadRequest("Cipher text to decrypt is required.");
 
             try
             {
-                string decrypted = SecurityHelper.Decrypt(request.Text, _encryptionKey);
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? "default_key_12345678901234567890";
+
+                string decrypted = SecurityHelper.Decrypt(request.Text, encryptionKey);
                 return Ok(new { Result = decrypted });
             }
             catch (Exception ex)

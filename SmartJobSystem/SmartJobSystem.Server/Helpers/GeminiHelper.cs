@@ -1,6 +1,7 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using SmartJobAPI.Models;
+using SmartJobSystem.Server.Data;
 using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobAPI.Helpers
@@ -8,28 +9,37 @@ namespace SmartJobAPI.Helpers
     public class GeminiHelper
     {
         private readonly HttpClient _http = new HttpClient();
-        private readonly string _apiKey;
+        private readonly DbHelper _db;
+        private readonly IConfiguration _config;
 
-        public GeminiHelper(IConfiguration config)
+        public GeminiHelper(DbHelper db, IConfiguration config)
         {
-            var encryptedKey = config["Gemini:ResumeApiKey"] ?? throw new InvalidOperationException("Gemini:ResumeApiKey is not configured.");
-            var encryptionKey = config["SecuritySettings:EncryptionKey"] ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured.");
-            _apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
+            _db = db;
+            _config = config;
         }
 
         public async Task<AiResumeResult> Generate(ProfileDto profile, List<string> sections)
         {
             try
             {
+                var encryptedKey = await _db.GetParameterValueAsync("Gemini:ResumeApiKey") 
+                    ?? throw new InvalidOperationException("Gemini:ResumeApiKey is not configured in database.");
+                
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured in database.");
+                
+                var apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
                 var sectionsList = string.Join(", ", sections);
                 var prompt = $@"
-You are a resume expert. Generate professional suggestions for the following resume sections: {sectionsList}.
+You are a professional resume writer. Based on the candidate information provided, DIRECTLY generate professional resume content for the following sections: {sectionsList}.
 
 RULES:
-1. Return ONLY VALID JSON.
-2. JSON keys MUST exactly match the section titles provided: {sectionsList}.
-3. The value for each key must be a LIST of strings (bullet points).
-4. SPECIAL RULE FOR 'Skills': Return skills as ONE or TWO strings containing groups of skills (e.g., 'Core: Java, C#, SQL. Web: HTML, CSS, JS.'), NOT as a list of individual items.
+1. DO NOT give advice or suggestions. Write the actual content as it should appear on a resume.
+2. Return ONLY VALID JSON.
+3. JSON keys MUST exactly match the section titles provided: {sectionsList}.
+4. The value for each key must be a LIST of strings (bullet points).
+5. Use a professional, action-oriented tone (e.g., 'Developed...', 'Managed...', 'Expert in...').
+6. SPECIAL RULE FOR 'Skills': Return skills as ONE or TWO strings containing groups of skills (e.g., 'Core: Java, C#, SQL. Web: HTML, CSS, JS.'), NOT as a list of individual items.
 
 Candidate Info:
 Name: {profile.FullName}
@@ -51,7 +61,7 @@ Location: {profile.PreferredLocation}
                 };
 
                 var response = await _http.PostAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}",
+                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}",
                     new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
                 );
 

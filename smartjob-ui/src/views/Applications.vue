@@ -233,7 +233,5 @@ function isClosingSoon(dateStr) {
 .bg-danger-subtle { background-color: rgba(239, 68, 68, 0.15) !important; }
 .text-danger-emphasis { color: #dc2626 !important; }
 
-body.theme-dark .text-warning-emphasis { color: #fbbf24 !important; }
-body.theme-dark .text-success-emphasis { color: #34d399 !important; }
-body.theme-dark .text-danger-emphasis { color: #f87171 !important; }
+
 </style>

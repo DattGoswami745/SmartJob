@@ -37,26 +37,13 @@ namespace SmartJobSystem.Server.Controllers
                 ? new Dictionary<string, object>() 
                 : JsonSerializer.Deserialize<Dictionary<string, object>>(filterJson) ?? new Dictionary<string, object>();
 
-            // Fetch data (reuse logic or call it)
+            // 1. Build Standardized Filter
+            var filterResult = BuildSecurityFilter(filters);
+            
+            // 2. Fetch data
             string[] fieldNames = fields.Select(f => f.id).ToArray();
-            var parameters = new Dictionary<string, object>();
-            string filterClause = ""; // Logic to build filter clause same as in GenerateReport
-
-            // TODO: Extract filter building logic to a helper method to keep it DRY
-            if (filters.Count > 0)
-            {
-                var filterParts = new List<string>();
-                foreach (var filter in filters)
-                {
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(filter.Key, @"^[a-zA-Z0-9_]+$")) continue;
-                    string paramName = $"@p{parameters.Count}";
-                    filterParts.Add($"{filter.Key} = {paramName}");
-                    parameters.Add(paramName, filter.Value);
-                }
-                filterClause = string.Join(" AND ", filterParts);
-            }
-
-            var data = await _db.GetDynamicReportDataAsync(config.BaseTable, fieldNames, filterClause, parameters);
+            var data = await _db.GetDynamicReportDataAsync(config.BaseTable, fieldNames, filterResult.Clause, filterResult.Parameters);
+            
             string userName = HttpContext.Session.GetString("UserName") ?? "System";
 
             if (format.ToLower() == "excel")
@@ -93,7 +80,6 @@ namespace SmartJobSystem.Server.Controllers
         [HttpPost("config")]
         public async Task<IActionResult> CreateReportConfig([FromBody] ReportConfiguration config)
         {
-            // Simple validation
             if (string.IsNullOrEmpty(config.ReportName) || string.IsNullOrEmpty(config.BaseTable))
                 return BadRequest("Report Name and Base Table are required.");
 
@@ -110,6 +96,14 @@ namespace SmartJobSystem.Server.Controllers
             return Ok(new { Message = "Report configuration updated successfully." });
         }
 
+        [HttpDelete("config/{id}")]
+        public async Task<IActionResult> DeleteReportConfig(int id)
+        {
+            bool success = await _db.DeleteReportConfigurationAsync(id);
+            if (!success) return NotFound();
+            return Ok(new { Message = "Report configuration deleted successfully." });
+        }
+
         // ================= GENERATION =================
 
         [HttpPost("generate/{id}")]
@@ -118,38 +112,17 @@ namespace SmartJobSystem.Server.Controllers
             var config = await _db.GetReportConfigurationByIdAsync(id);
             if (config == null) return NotFound("Report configuration not found.");
 
-            // 1. Parse fields
             var fields = JsonSerializer.Deserialize<List<FieldDefinition>>(config.SelectedFields);
             if (fields == null || fields.Count == 0) return BadRequest("No fields defined for this report.");
 
+            // 1. Build Standardized Filter
+            var filterResult = BuildSecurityFilter(request.Filters ?? new Dictionary<string, object>());
+
+            // 2. Fetch Data
             string[] fieldNames = fields.Select(f => f.id).ToArray();
+            var data = await _db.GetDynamicReportDataAsync(config.BaseTable, fieldNames, filterResult.Clause, filterResult.Parameters);
 
-            // 2. Build Filter Clause (Simplified for now)
-            string filterClause = "";
-            var parameters = new Dictionary<string, object>();
-            
-            if (request.Filters != null && request.Filters.Count > 0)
-            {
-                var filterParts = new List<string>();
-                foreach (var filter in request.Filters)
-                {
-                    // Basic sanity check on filter key to prevent SQL injection
-                    if (!System.Text.RegularExpressions.Regex.IsMatch(filter.Key, @"^[a-zA-Z0-9_]+$")) continue;
-
-                    string paramName = $"@p{parameters.Count}";
-                    filterParts.Add($"{filter.Key} = {paramName}");
-                    parameters.Add(paramName, filter.Value);
-                }
-                if (filterParts.Count > 0)
-                {
-                    filterClause = string.Join(" AND ", filterParts);
-                }
-            }
-
-            // 3. Fetch Data
-            var data = await _db.GetDynamicReportDataAsync(config.BaseTable, fieldNames, filterClause, parameters);
-
-            // 4. Log generation
+            // 3. Log generation
             int? userId = HttpContext.Session.GetInt32("UserId");
             if (userId.HasValue)
             {
@@ -171,6 +144,35 @@ namespace SmartJobSystem.Server.Controllers
                 GeneratedBy = HttpContext.Session.GetString("UserName") ?? "System"
             });
         }
+
+        private (string Clause, Dictionary<string, object> Parameters) BuildSecurityFilter(Dictionary<string, object> filters)
+        {
+            var parameters = new Dictionary<string, object>();
+            var filterParts = new List<string>();
+
+            // Role-Based Restriction: Enforce CompanyId for company users
+            string role = HttpContext.Session.GetString("Role") ?? "";
+            int? companyId = HttpContext.Session.GetInt32("CompanyId");
+
+            if (role == "Company" && companyId.HasValue)
+            {
+                parameters.Add("@securityCompanyId", companyId.Value);
+                filterParts.Add("CompanyId = @securityCompanyId");
+            }
+
+            // User-defined filters
+            foreach (var filter in filters)
+            {
+                if (!System.Text.RegularExpressions.Regex.IsMatch(filter.Key, @"^[a-zA-Z0-9_]+$")) continue;
+                
+                string paramName = $"@p{parameters.Count}";
+                filterParts.Add($"{filter.Key} = {paramName}");
+                parameters.Add(paramName, filter.Value);
+            }
+
+            string clause = string.Join(" AND ", filterParts);
+            return (clause, parameters);
+        }
     }
 
     public class ReportGenerationRequest
@@ -178,12 +180,5 @@ namespace SmartJobSystem.Server.Controllers
         public Dictionary<string, object>? Filters { get; set; }
         public int PageIndex { get; set; } = 0;
         public int PageSize { get; set; } = 10;
-    }
-
-    public class FieldDefinition
-    {
-        public string id { get; set; } = string.Empty;
-        public string label { get; set; } = string.Empty;
-        public string type { get; set; } = "string";
     }
 }

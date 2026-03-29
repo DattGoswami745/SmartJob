@@ -144,7 +144,7 @@
 
         <div class="form-group">
           <label>Last Date to Apply</label>
-          <input type="date" v-model="newJob.lastDate" />
+          <input type="date" v-model="newJob.lastDate" :min="minDate" />
         </div>
       </div>
 
@@ -262,7 +262,7 @@
 
         <div class="form-group">
           <label>Last Date to Apply</label>
-          <input type="date" v-model="editingJob.lastDate" />
+          <input type="date" v-model="editingJob.lastDate" :min="minDate" />
         </div>
       </div>
 
@@ -336,7 +336,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import {
   getCompanyJobs,
   addCompanyJob,
@@ -382,6 +382,11 @@ const newJob = ref({
 const editingJob = ref({})
 const errors = ref({})
 const updateErrors = ref({})
+
+const minDate = computed(() => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+})
 
 const validateJobData = (targetJob, targetErrors) => {
   targetErrors.value = {}

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SmartJobAPI.Helpers;
 using SmartJobSystem.Server.Helpers;
+using SmartJobSystem.Server.Data;
 
 namespace SmartJobAPI.Controllers
 {
@@ -11,13 +12,13 @@ namespace SmartJobAPI.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
-        private readonly string _encryptionKey;
+        private readonly DbHelper _db;
 
-        public AuthController(IConfiguration config, IEmailService emailService)
+        public AuthController(IConfiguration config, IEmailService emailService, DbHelper db)
         {
             _config = config;
             _emailService = emailService;
-            _encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? throw new InvalidOperationException("EncryptionKey is not configured.");
+            _db = db;
         }
 
         // ================= LOGIN =================
@@ -104,7 +105,9 @@ namespace SmartJobAPI.Controllers
 
                 // 🎲 Generate OTP
                 string otp = new Random().Next(100000, 999999).ToString();
-                string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? throw new InvalidOperationException("EncryptionKey not found in DB.");
+                string encryptedOtp = SecurityHelper.Encrypt(otp, encryptionKey);
                 DateTime expiry = DateTime.UtcNow.AddMinutes(2);
 
                 // 🧑 Insert into Users
@@ -220,16 +223,16 @@ namespace SmartJobAPI.Controllers
 
         // ================= VERIFY EMAIL =================
         [HttpPost("verify-email")]
-        public IActionResult VerifyEmail([FromBody] VerifyEmailDto dto)
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDto dto)
         {
             using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
-            con.Open();
+            await con.OpenAsync();
 
             var cmd = new SqlCommand("SELECT UserId, EmailOTP, EmailOTPExpiry FROM Users WHERE Email = @Email AND IsActive = 1", con);
             cmd.Parameters.AddWithValue("@Email", dto.Email);
-            using var reader = cmd.ExecuteReader();
+            using var reader = await cmd.ExecuteReaderAsync();
 
-            if (!reader.Read())
+            if (!await reader.ReadAsync())
                 return NotFound(new { message = "User not found" });
 
             var dbOtpEncrypted = reader["EmailOTP"]?.ToString();
@@ -238,7 +241,9 @@ namespace SmartJobAPI.Controllers
             if (string.IsNullOrEmpty(dbOtpEncrypted))
                 return BadRequest(new { message = "Invalid OTP" });
 
-            string dbOtp = SecurityHelper.Decrypt(dbOtpEncrypted, _encryptionKey);
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                ?? throw new InvalidOperationException("EncryptionKey not found in DB.");
+            string dbOtp = SecurityHelper.Decrypt(dbOtpEncrypted, encryptionKey);
 
             // ✅ Allow bypass OTP '111111' for testers/demos
             if (dbOtp != dto.Otp && dto.Otp != "111111")
@@ -255,7 +260,7 @@ namespace SmartJobAPI.Controllers
                 WHERE Email = @Email
             ", con);
             updateCmd.Parameters.AddWithValue("@Email", dto.Email);
-            updateCmd.ExecuteNonQuery();
+            await updateCmd.ExecuteNonQueryAsync();
 
             return Ok(new { message = "Email verified successfully" });
         }
@@ -272,13 +277,13 @@ namespace SmartJobAPI.Controllers
             try
             {
                 using SqlConnection con = new(_config.GetConnectionString("DefaultConnection"));
-                con.Open();
+                await con.OpenAsync();
 
                 var cmd = new SqlCommand("SELECT UserId FROM Users WHERE Email = @Email AND IsActive = 1", con);
                 cmd.Parameters.AddWithValue("@Email", dto.Email);
-                using var reader = cmd.ExecuteReader();
+                using var reader = await cmd.ExecuteReaderAsync();
 
-                if (!reader.Read())
+                if (!await reader.ReadAsync())
                 {
                     reader.Close();
                     return NotFound(new { message = "User not found" });
@@ -288,7 +293,9 @@ namespace SmartJobAPI.Controllers
 
                 // 🎲 Generate NEW OTP
                 string otp = new Random().Next(100000, 999999).ToString();
-                string encryptedOtp = SecurityHelper.Encrypt(otp, _encryptionKey);
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? throw new InvalidOperationException("EncryptionKey not found in DB.");
+                string encryptedOtp = SecurityHelper.Encrypt(otp, encryptionKey);
                 DateTime expiry = DateTime.UtcNow.AddMinutes(2);
 
                 var updateCmd = new SqlCommand(@"
@@ -299,7 +306,7 @@ namespace SmartJobAPI.Controllers
                 updateCmd.Parameters.AddWithValue("@OTP", encryptedOtp);
                 updateCmd.Parameters.AddWithValue("@Expiry", expiry);
                 updateCmd.Parameters.AddWithValue("@Email", dto.Email);
-                updateCmd.ExecuteNonQuery();
+                await updateCmd.ExecuteNonQueryAsync();
 
                 // 📧 Send Email
                 string emailBody = $@"

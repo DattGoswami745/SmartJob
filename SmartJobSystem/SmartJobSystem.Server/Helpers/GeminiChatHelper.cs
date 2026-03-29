@@ -1,5 +1,6 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
+using SmartJobSystem.Server.Data;
 using SmartJobSystem.Server.Helpers;
 
 namespace SmartJobAPI.Helpers
@@ -7,20 +8,27 @@ namespace SmartJobAPI.Helpers
     public class GeminiChatHelper
     {
         private readonly HttpClient _http;
-        private readonly string _apiKey;
+        private readonly DbHelper _db;
+        private readonly IConfiguration _config;
 
-        public GeminiChatHelper(HttpClient http, IConfiguration config)
+        public GeminiChatHelper(HttpClient http, DbHelper db, IConfiguration config)
         {
             _http = http;
-            var encryptedKey = config["Gemini:ChatApiKey"] ?? throw new InvalidOperationException("Gemini:ChatApiKey is not configured.");
-            var encryptionKey = config["SecuritySettings:EncryptionKey"] ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured.");
-            _apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
+            _db = db;
+            _config = config;
         }
 
         public async Task<string> Ask(List<ChatMessage> conversation, string systemContext = "")
         {
             try
             {
+                var encryptedKey = await _db.GetParameterValueAsync("Gemini:ChatApiKey") 
+                    ?? throw new InvalidOperationException("Gemini:ChatApiKey is not configured in database.");
+                
+                var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") 
+                    ?? throw new InvalidOperationException("SecuritySettings:EncryptionKey is not configured in database.");
+                
+                var apiKey = SecurityHelper.Decrypt(encryptedKey, encryptionKey);
                 var contents = new List<object>();
 
                 if (!string.IsNullOrEmpty(systemContext))
@@ -52,7 +60,7 @@ namespace SmartJobAPI.Helpers
                 };
 
                 var response = await _http.PostAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}",
+                    $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}",
                     new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
                 );
 

@@ -69,9 +69,25 @@
               <div class="col-12 mt-4">
                 <label class="form-label text-muted small fw-semibold mb-2">Resume (PDF or Word)</label>
                 <div class="d-flex align-items-center gap-3">
-                  <input type="file" ref="resumeInput" class="form-control premium-input flex-grow-1" style="max-width: 400px;" accept=".pdf,.doc,.docx" @change="handleResumeUpload" />
+                  <!-- Custom File Display if resume exists -->
+                  <div v-if="profile.resumeFileName && !isChangingResume" class="flex-grow-1 border rounded-3 p-2 bg-light-subtle d-flex align-items-center justify-content-between" style="max-width: 400px; min-height: 48px; border: 1px dashed var(--border) !important;">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden px-2">
+                      <FileText size="18" class="text-primary flex-shrink-0" />
+                      <span class="text-truncate small fw-medium">{{ profile.resumeFileName }}</span>
+                    </div>
+                    <button @click="isChangingResume = true" class="btn btn-link btn-sm text-primary text-decoration-none fw-bold me-2">Change</button>
+                  </div>
+
+                  <!-- Standard Input if no resume OR user clicks Change -->
+                  <div v-else class="flex-grow-1 position-relative" style="max-width: 400px;">
+                    <input type="file" ref="resumeInput" class="form-control premium-input w-100" accept=".pdf,.doc,.docx" @change="handleResumeUpload" />
+                    <button v-if="isChangingResume" @click="isChangingResume = false" class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-2 text-muted" title="Cancel change">
+                      <X size="16" />
+                    </button>
+                  </div>
+
                   <button v-if="profile.resumePath" @click="openResumeViewer" class="btn btn-outline-primary d-flex align-items-center gap-2">
-                    <FileText size="18" /> View Current Resume
+                    <FileText size="18" /> View Current
                   </button>
                 </div>
               </div>
@@ -169,10 +185,12 @@ const profile = ref({
   experienceYears: 0,
   education: "",
   preferredLocation: "",
-  resumePath: ""
+  resumePath: "",
+  resumeFileName: ""
 })
 
 const resumeInput = ref(null)
+const isChangingResume = ref(false)
 
 /* 📄 RESUME VIEWER STATE */
 const isResumeModalOpen = ref(false)
@@ -253,6 +271,8 @@ const handleResumeUpload = async (event) => {
     if (res.ok) {
       const data = await res.json()
       profile.value.resumePath = data.resumePath
+      profile.value.resumeFileName = file.name // Update local filename display
+      isChangingResume.value = false // Reset the UI to show the new file
       handleSuccess("Resume uploaded successfully!")
     } else {
       const errData = await res.json()

@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using SmartJobSystem.Server.Data;
-using System.Text;
+using SmartJobSystem.Server.Helpers;
+using SmartJobSystem.Server.Models;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SmartJobSystem.Server.Controllers
@@ -10,10 +13,12 @@ namespace SmartJobSystem.Server.Controllers
     public class CentralReportsController : ControllerBase
     {
         private readonly DbHelper _db;
+        private readonly IReportExportService _exportService;
 
-        public CentralReportsController(DbHelper db)
+        public CentralReportsController(DbHelper db, IReportExportService exportService)
         {
             _db = db;
+            _exportService = exportService;
         }
 
         [HttpGet("job/{jobId}")]
@@ -23,15 +28,19 @@ namespace SmartJobSystem.Server.Controllers
             var dReport = (dynamic)reportData;
 
             var jobTitle = dReport.JobTitle;
-            var companyName = dReport.CompanyName;
-            var applicants = dReport.Applicants;
+            var applicants = (List<object>)dReport.Applicants;
 
             if (applicants == null || applicants.Count == 0)
             {
                 return NotFound("No applicants found for this job.");
             }
 
-            return GenerateExcelReport(jobTitle, companyName, applicants, $"JobReport_{jobId}.xls");
+            var headers = GetApplicantHeaders();
+            var data = MapApplicantsToData(applicants);
+            string userName = HttpContext.Session.GetString("UserName") ?? "System";
+
+            var bytes = _exportService.GenerateExcel($"{jobTitle} - Applicants", headers, data, userName);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"JobReport_{jobId}.xlsx");
         }
 
         [HttpGet("multi")]
@@ -44,68 +53,54 @@ namespace SmartJobSystem.Server.Controllers
                 return NotFound("No applicants found for the selected filters.");
             }
 
-            string reportTitle = "Consolidated";
-            if (companyId.HasValue && companyId > 0) reportTitle += "_Company_" + companyId;
-            if (jobId.HasValue && jobId > 0) reportTitle += "_Job_" + jobId;
+            string reportTitle = "Consolidated Report";
+            string fileName = "Consolidated_Report.xlsx";
 
-            return GenerateExcelReport("Consolidated Report", "Multiple Companies/Jobs", applicants, $"{reportTitle}_Report.xls");
+            var headers = GetApplicantHeaders();
+            var data = MapApplicantsToData(applicants);
+            string userName = HttpContext.Session.GetString("UserName") ?? "System";
+
+            var bytes = _exportService.GenerateExcel(reportTitle, headers, data, userName);
+            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
 
-        private IActionResult GenerateExcelReport(string title, string company, List<object> applicants, string fileName)
+        private List<FieldDefinition> GetApplicantHeaders()
         {
-            var builder = new StringBuilder();
+            return new List<FieldDefinition>
+            {
+                new FieldDefinition { id = "FullName", label = "Full Name" },
+                new FieldDefinition { id = "Email", label = "Email" },
+                new FieldDefinition { id = "JobTitle", label = "Job Title" },
+                new FieldDefinition { id = "CompanyName", label = "Company" },
+                new FieldDefinition { id = "AppliedDate", label = "Applied Date" },
+                new FieldDefinition { id = "Status", label = "Status" },
+                new FieldDefinition { id = "Experience", label = "Exp (Yrs)" },
+                new FieldDefinition { id = "Education", label = "Education" },
+                new FieldDefinition { id = "Location", label = "Location" }
+            };
+        }
 
-            builder.AppendLine("<html>");
-            builder.AppendLine("<head><meta charset='utf-8'></head>");
-            builder.AppendLine("<body>");
-            builder.AppendLine("<table>");
-
-            // Metadata
-            builder.AppendLine($"<tr><td colspan='2'><b>Report Title:</b></td><td colspan='7'>{EscapeHtml(title)}</td></tr>");
-            builder.AppendLine($"<tr><td colspan='2'><b>Scope:</b></td><td colspan='7'>{EscapeHtml(company)}</td></tr>");
-            builder.AppendLine($"<tr><td colspan='2'><b>Date:</b></td><td colspan='7'>{DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC</td></tr>");
-            builder.AppendLine("<tr><td colspan='9'></td></tr>");
-
-            // Headers
-            builder.AppendLine("<tr style='background-color: #f1f5f9; font-weight: bold;'>");
-            builder.AppendLine("<td><b>Full Name</b></td>");
-            builder.AppendLine("<td><b>Email</b></td>");
-            builder.AppendLine("<td><b>Job Title</b></td>");
-            builder.AppendLine("<td><b>Company</b></td>");
-            builder.AppendLine("<td><b>Applied Date</b></td>");
-            builder.AppendLine("<td><b>Status</b></td>");
-            builder.AppendLine("<td><b>Exp (Yrs)</b></td>");
-            builder.AppendLine("<td><b>Education</b></td>");
-            builder.AppendLine("<td><b>Location</b></td>");
-            builder.AppendLine("</tr>");
-
+        private List<IDictionary<string, object>> MapApplicantsToData(List<object> applicants)
+        {
+            var data = new List<IDictionary<string, object>>();
             foreach (var app in applicants)
             {
                 var d = (dynamic)app;
-                builder.AppendLine("<tr>");
-                builder.AppendLine($"<td>{EscapeHtml(d.FullName)}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.Email)}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.JobTitle)}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.CompanyName)}</td>");
-                builder.AppendLine($"<td>{d.AppliedDate:yyyy-MM-dd}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.Status)}</td>");
-                builder.AppendLine($"<td>{d.ExperienceValue}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.Education)}</td>");
-                builder.AppendLine($"<td>{EscapeHtml(d.Location)}</td>");
-                builder.AppendLine("</tr>");
+                var dict = new Dictionary<string, object>
+                {
+                    ["FullName"] = d.FullName,
+                    ["Email"] = d.Email,
+                    ["JobTitle"] = d.JobTitle,
+                    ["CompanyName"] = d.CompanyName,
+                    ["AppliedDate"] = d.AppliedDate?.ToString("yyyy-MM-dd") ?? "",
+                    ["Status"] = d.Status,
+                    ["Experience"] = d.ExperienceValue,
+                    ["Education"] = d.Education,
+                    ["Location"] = d.Location
+                };
+                data.Add(dict);
             }
-
-            builder.AppendLine("</table></body></html>");
-
-            var fileBytes = Encoding.UTF8.GetBytes(builder.ToString());
-            return File(fileBytes, "application/vnd.ms-excel", fileName);
-        }
-
-        // Helper to escape HTML characters
-        private string EscapeHtml(string field)
-        {
-            if (string.IsNullOrEmpty(field)) return "";
-            return System.Net.WebUtility.HtmlEncode(field);
+            return data;
         }
     }
 }

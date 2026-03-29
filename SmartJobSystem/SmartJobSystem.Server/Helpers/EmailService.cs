@@ -1,27 +1,36 @@
 using System.Net;
 using System.Net.Mail;
+using SmartJobSystem.Server.Data;
 
 namespace SmartJobSystem.Server.Helpers
 {
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
+        private readonly DbHelper _db;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, DbHelper db)
         {
             _config = config;
+            _db = db;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
         {
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"];
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey");
 
-            var smtpHost = SecurityHelper.Decrypt(_config["SmtpSettings:Host"], encryptionKey);
-            var smtpPortStr = SecurityHelper.Decrypt(_config["SmtpSettings:Port"], encryptionKey);
+            var smtpHostEnc = await _db.GetParameterValueAsync("SmtpSettings:Host");
+            var smtpPortEnc = await _db.GetParameterValueAsync("SmtpSettings:Port");
+            var smtpUserEnc = await _db.GetParameterValueAsync("SmtpSettings:Username");
+            var smtpPassEnc = await _db.GetParameterValueAsync("SmtpSettings:Password");
+            var fromEmailEnc = await _db.GetParameterValueAsync("SmtpSettings:FromEmail");
+
+            var smtpHost = SecurityHelper.Decrypt(smtpHostEnc, encryptionKey);
+            var smtpPortStr = SecurityHelper.Decrypt(smtpPortEnc, encryptionKey);
             var smtpPort = int.Parse(string.IsNullOrEmpty(smtpPortStr) ? "587" : smtpPortStr);
-            var smtpUser = SecurityHelper.Decrypt(_config["SmtpSettings:Username"], encryptionKey);
-            var smtpPass = SecurityHelper.Decrypt(_config["SmtpSettings:Password"], encryptionKey);
-            var fromEmail = SecurityHelper.Decrypt(_config["SmtpSettings:FromEmail"], encryptionKey);
+            var smtpUser = SecurityHelper.Decrypt(smtpUserEnc, encryptionKey);
+            var smtpPass = SecurityHelper.Decrypt(smtpPassEnc, encryptionKey);
+            var fromEmail = SecurityHelper.Decrypt(fromEmailEnc, encryptionKey);
 
             if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUser))
             {

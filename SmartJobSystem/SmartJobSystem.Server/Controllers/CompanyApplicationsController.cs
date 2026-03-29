@@ -177,7 +177,7 @@ namespace SmartJobSystem.Server.Controllers
             if (profile == null)
                 return NotFound(new { message = "Profile not found." });
 
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
             var profileData = profile as dynamic;
             string resumePath = profileData?.ResumePath ?? "";
 
@@ -196,7 +196,8 @@ namespace SmartJobSystem.Server.Controllers
                 experienceYears = profileData.ExperienceYears,
                 education = profileData.Education,
                 preferredLocation = profileData.PreferredLocation,
-                resumePath = resumePath
+                resumePath = resumePath,
+                resumeFileName = profileData.ResumeFileName
             });
         }
 

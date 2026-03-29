@@ -9,7 +9,7 @@ export const API_HOST = "https://localhost:7269"
 async function handleResponse(res) {
   if (res.ok) {
     const contentType = res.headers.get("content-type");
-    
+
     if (contentType && contentType.includes("application/json")) {
       const text = await res.text();
       return text ? JSON.parse(text) : true;
@@ -32,14 +32,19 @@ async function handleResponse(res) {
 
   // Handle errors
   let errorMessage = "An error occurred";
+  const clonedRes = res.clone();
   try {
     const errorData = await res.json();
     errorMessage = errorData.message || JSON.stringify(errorData);
   } catch (e) {
-    const textError = await res.text();
-    errorMessage = textError || `HTTP Error ${res.status}`;
+    try {
+      const textError = await clonedRes.text();
+      errorMessage = textError || `HTTP Error ${res.status}`;
+    } catch (textErr) {
+      errorMessage = `HTTP Error ${res.status}`;
+    }
   }
-  
+
   throw new Error(errorMessage);
 }
 
@@ -225,7 +230,7 @@ export async function sendGeminiMessage(message) {
     credentials: "include",
     body: JSON.stringify({ message })
   })
-  
+
   // Chat returns plain text, handleResponse handles it
   return handleResponse(res)
 }
@@ -311,7 +316,7 @@ export async function getUserProfileForCompany(userId) {
   const res = await fetch(`${BASE}/company/applications/profile/${userId}`, {
     credentials: "include"
   })
-  
+
   if (res.status === 404) return null
   return handleResponse(res)
 }
@@ -357,7 +362,7 @@ export async function getUserProfileForAdmin(userId) {
   const res = await fetch(`${BASE}/central/applications/profile/${userId}`, {
     credentials: "include"
   })
-  
+
   if (res.status === 404) return null
   return handleResponse(res)
 }
@@ -587,6 +592,14 @@ export async function updateReportConfig(id, config) {
   return handleResponse(res)
 }
 
+export async function deleteReportConfig(id) {
+  const res = await fetch(`${BASE}/reports/config/${id}`, {
+    method: "DELETE",
+    credentials: "include"
+  })
+  return handleResponse(res)
+}
+
 export async function generateReportData(id, request) {
   const res = await fetch(`${BASE}/reports/generate/${id}`, {
     method: "POST",
@@ -602,7 +615,7 @@ export async function downloadDynamicReport(id, format, filters) {
   const res = await fetch(`${BASE}/reports/export/${id}/${format}?filterJson=${filterJson}`, {
     credentials: "include"
   })
-  
+
   const blob = await handleResponse(res)
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement("a")

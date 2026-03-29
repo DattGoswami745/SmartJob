@@ -26,4 +26,11 @@ namespace SmartJobSystem.Server.Models
         public string Format { get; set; } = "Web";
         public string? FilterValues { get; set; } // JSON
     }
+
+    public class FieldDefinition
+    {
+        public string id { get; set; } = string.Empty;
+        public string label { get; set; } = string.Empty;
+        public string type { get; set; } = "string";
+    }
 }

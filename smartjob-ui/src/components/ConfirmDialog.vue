@@ -49,11 +49,7 @@ const { isVisible, title, message, onConfirm, onCancel } = useConfirm()
   animation: slide-up 0.3s ease-out;
 }
 
-/* Dark mode support */
-:deep(body.theme-dark) .confirm-modal {
-  background: #1e293b;
-  color: #f8fafc;
-}
+
 
 .confirm-header {
   padding: 20px 24px;
@@ -63,9 +59,7 @@ const { isVisible, title, message, onConfirm, onCancel } = useConfirm()
   border-bottom: 1px solid #f1f5f9;
 }
 
-:deep(body.theme-dark) .confirm-header {
-  border-bottom-color: #334155;
-}
+
 
 .confirm-header h3 {
   margin: 0;
@@ -89,9 +83,7 @@ const { isVisible, title, message, onConfirm, onCancel } = useConfirm()
   line-height: 1.5;
 }
 
-:deep(body.theme-dark) .confirm-body {
-  color: #cbd5e1;
-}
+
 
 .confirm-footer {
   padding: 16px 24px;
@@ -101,9 +93,7 @@ const { isVisible, title, message, onConfirm, onCancel } = useConfirm()
   gap: 12px;
 }
 
-:deep(body.theme-dark) .confirm-footer {
-  background: #0f172a;
-}
+
 
 .cancel-btn {
   padding: 10px 18px;
@@ -116,19 +106,13 @@ const { isVisible, title, message, onConfirm, onCancel } = useConfirm()
   transition: all 0.2s;
 }
 
-:deep(body.theme-dark) .cancel-btn {
-  background: #1e293b;
-  border-color: #334155;
-  color: #94a3b8;
-}
+
 
 .cancel-btn:hover {
   background: #f1f5f9;
 }
 
-:deep(body.theme-dark) .cancel-btn:hover {
-  background: #334155;
-}
+
 
 .confirm-btn {
   padding: 10px 18px;

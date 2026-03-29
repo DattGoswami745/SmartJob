@@ -36,7 +36,7 @@ namespace SmartJobSystem.Server.Controllers
 
             var docs = new List<CompanyVerificationDocument>();
             var allowedTypes = new[] { "Incorporation", "GST", "PAN" };
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             for (int i = 0; i < files.Count; i++)
             {
@@ -95,7 +95,7 @@ namespace SmartJobSystem.Server.Controllers
             if (role != "Central" && role != "SuperAdmin" && doc.CompanyId != companyId)
                 return Unauthorized(new { message = "You do not have permission to view this document." });
 
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             // DECRYPT THE FILE CONTENT
             byte[] decryptedFileBytes;

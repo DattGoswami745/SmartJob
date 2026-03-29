@@ -211,4 +211,3 @@ C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\SmartJobSystem.Se
 C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\SmartJobSystem.Server\obj\Debug\net8.0\SmartJobSystem.Server.sourcelink.json
 C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\SmartJobSystem.Server\bin\Debug\net8.0\SmartJobSystem.Server.staticwebassets.runtime.json
 C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\SmartJobSystem.Server\obj\Debug\net8.0\swae.build.ex.cache
-C:\Users\Datt Goswami\OneDrive\Desktop\smartjob\SmartJobSystem\SmartJobSystem.Server\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

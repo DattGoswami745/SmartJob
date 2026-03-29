@@ -32,7 +32,7 @@ namespace SmartJobSystem.Server.Controllers
                 return StatusCode(403, new { message = "You do not have permission to view these documents." });
 
             var docs = await _db.GetCompanyDocumentsAsync(companyId);
-            var encryptionKey = _config["SecuritySettings:EncryptionKey"] ?? "";
+            var encryptionKey = await _db.GetParameterValueAsync("SecuritySettings:EncryptionKey") ?? "";
 
             foreach (var doc in docs)
             {

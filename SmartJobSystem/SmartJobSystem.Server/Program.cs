@@ -9,7 +9,7 @@ builder.Services.AddControllers();
 
 /* DB Helper */
 builder.Services.AddScoped<DbHelper>();
-builder.Services.AddSingleton<GeminiHelper>();
+builder.Services.AddScoped<GeminiHelper>();
 builder.Services.AddHttpClient<GeminiChatHelper>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
@@ -34,7 +34,7 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
-    });
+        });
 });
 
 /* Swagger */
