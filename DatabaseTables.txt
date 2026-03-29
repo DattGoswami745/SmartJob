@@ -1,126 +1,130 @@
-Table for user 
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [UserId]
-      ,[FullName]
-      ,[Email]
-      ,[PasswordHash]
-      ,[Role]
-      ,[CreatedAt]
-      ,[IsActive]
-      ,[IsEmailVerified]
-      ,[EmailOTP]
-      ,[EmailOTPExpiry]
-      ,[CompanyId]
-  FROM [SmartJobDB].[dbo].[Users]
+CREATE TABLE Users (
+    UserId INT IDENTITY(1,1) PRIMARY KEY,
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(150) NOT NULL UNIQUE,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    Role NVARCHAR(50) DEFAULT 'User',
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    IsActive BIT DEFAULT 1,
+    IsEmailVerified BIT DEFAULT 0 NOT NULL,
+    EmailOTP VARCHAR(255),
+    EmailOTPExpiry DATETIME,
+    CompanyId INT
+);
 
-Table for userprofile 
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [ProfileId]
-      ,[UserId]
-      ,[Skills]
-      ,[ExperienceYears]
-      ,[Education]
-      ,[PreferredLocation]
-      ,[ResumePath]
-  FROM [SmartJobDB].[dbo].[UserProfiles]
+CREATE TABLE UserProfiles (
+    ProfileId INT IDENTITY(1,1) PRIMARY KEY,
+    UserId INT NOT NULL,
+    Skills NVARCHAR(MAX),
+    ExperienceYears INT,
+    Education NVARCHAR(150),
+    PreferredLocation NVARCHAR(100),
+    ResumePath NVARCHAR(255),
+    ResumeFile VARBINARY(MAX),
+    ResumeFileName NVARCHAR(255),
+    ResumeContentType NVARCHAR(100),
 
-Table for useractivitylog
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [LogId]
-      ,[UserId]
-      ,[Action]
-      ,[ActionDate]
-  FROM [SmartJobDB].[dbo].[UserActivityLogs]
+    CONSTRAINT FK_UserProfiles_Users 
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
 
-Table for job
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [JobId]
-      ,[CompanyId]
-      ,[Title]
-      ,[Description]
-      ,[RequiredSkills]
-      ,[JobType]
-      ,[SalaryRange]
-      ,[PostedDate]
-      ,[IsActive]
-      ,[LastDate]
-      ,[IsApproved]
-      ,[JobDescriptionFile]
-      ,[JobDescriptionText]
-      ,[JobDescriptionUpdatedAt]
-  FROM [SmartJobDB].[dbo].[Jobs]
+CREATE TABLE UserActivityLogs (
+    LogId INT IDENTITY(1,1) PRIMARY KEY,
+    UserId INT,
+    Action NVARCHAR(100),
+    ActionDate DATETIME DEFAULT GETDATE(),
 
-Table for company
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [CompanyId]
-      ,[CompanyName]
-      ,[Industry]
-      ,[Location]
-      ,[CreatedAt]
-      ,[IsCompanyVerified]
-  FROM [SmartJobDB].[dbo].[Companies]
+    CONSTRAINT FK_UserActivityLogs_Users
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
 
-Table for application
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [ApplicationId]
-      ,[JobId]
-      ,[UserId]
-      ,[ApplicationStatus]
-      ,[AppliedDate]
-  FROM [SmartJobDB].[dbo].[Applications]
+CREATE TABLE ReportGenerationLogs (
+    LogId INT IDENTITY(1,1) PRIMARY KEY,
+    ReportId INT,
+    UserId INT,
+    GeneratedAt DATETIME DEFAULT GETUTCDATE(),
+    Format NVARCHAR(20),
+    FilterValues NVARCHAR(MAX),
 
-Table for AIJobRecommendations
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [RecommendationId]
-      ,[UserId]
-      ,[JobId]
-      ,[MatchScore]
-      ,[GeneratedAt]
-  FROM [SmartJobDB].[dbo].[AI_JobRecommendations]
+    CONSTRAINT FK_ReportGenerationLogs_Report
+    FOREIGN KEY (ReportId) REFERENCES ReportConfigurations(ReportId)
+);
 
-Table for CompanyVerificationDocuments
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [nDocumentId]
-      ,[nCompanyId]
-      ,[vDocumentType]
-      ,[vFileName]
-      ,[vFilePath]
-      ,[IsVerified]
-      ,[nVerifiedBy]
-      ,[dVerifiedOnUTC]
-      ,[IsRejected]
-      ,[vRejectReason]
-      ,[nRecordedBy]
-      ,[dRecordedOnUTC]
-  FROM [SmartJobDB].[dbo].[CompanyVerificationDocuments]
+CREATE TABLE ReportConfigurations (
+    ReportId INT IDENTITY(1,1) PRIMARY KEY,
+    ReportName NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(MAX),
+    BaseTable NVARCHAR(MAX) NOT NULL,
+    SelectedFields NVARCHAR(MAX) NOT NULL,
+    Filters NVARCHAR(MAX),
+    IsActive BIT DEFAULT 1,
+    CreatedBy INT,
+    CreatedAt DATETIME DEFAULT GETUTCDATE(),
+    UpdatedAt DATETIME DEFAULT GETUTCDATE()
+);
 
-Table for ReportConfigurations
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [ReportId]
-      ,[ReportName]
-      ,[Description]
-      ,[BaseTable]
-      ,[SelectedFields]
-      ,[Filters]
-      ,[IsActive]
-      ,[CreatedBy]
-      ,[CreatedAt]
-      ,[UpdatedAt]
-  FROM [SmartJobDB].[dbo].[ReportConfigurations]
+CREATE TABLE Parameters (
+    ParamKey NVARCHAR(100) PRIMARY KEY,
+    ParamValue NVARCHAR(MAX) NOT NULL,
+    Description NVARCHAR(255)
+);
 
-Table for ReportGenerationLogs
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [LogId]
-      ,[ReportId]
-      ,[UserId]
-      ,[GeneratedAt]
-      ,[Format]
-      ,[FilterValues]
-  FROM [SmartJobDB].[dbo].[ReportGenerationLogs]
+CREATE TABLE Jobs (
+    JobId INT IDENTITY(1,1) PRIMARY KEY,
+    CompanyId INT NOT NULL,
+    Title NVARCHAR(150) NOT NULL,
+    Description NVARCHAR(MAX) NOT NULL,
+    RequiredSkills NVARCHAR(MAX) NOT NULL,
+    JobType NVARCHAR(50),
+    SalaryRange NVARCHAR(50),
+    PostedDate DATETIME DEFAULT GETDATE(),
+    IsActive BIT DEFAULT 1,
+    LastDate DATETIME,
+    IsApproved BIT DEFAULT 0 NOT NULL,
+    JobDescriptionFile NVARCHAR(MAX),
+    JobDescriptionText NVARCHAR(MAX),
+    JobDescriptionUpdatedAt DATETIME,
 
-Table for Parameters
-/****** Script for SelectTopNRows command from SSMS  ******/
-SELECT TOP (1000) [ParamKey]
-      ,[ParamValue]
-      ,[Description]
-  FROM [SmartJobDB].[dbo].[Parameters]
+    CONSTRAINT FK_Jobs_Companies
+    FOREIGN KEY (CompanyId) REFERENCES Companies(CompanyId)
+);
+
+CREATE TABLE CompanyVerificationDocuments (
+    DocumentId BIGINT IDENTITY(1,1) PRIMARY KEY,
+    CompanyId BIGINT NOT NULL,
+    DocumentType VARCHAR(100) NOT NULL,
+    FileName VARCHAR(500) NOT NULL,
+    FilePath VARCHAR(1000) NOT NULL,
+    IsVerified BIT DEFAULT 0,
+    VerifiedBy BIGINT,
+    VerifiedOnUTC DATETIME,
+    IsRejected BIT DEFAULT 0,
+    RejectReason VARCHAR(500),
+    RecordedBy BIGINT,
+    RecordedOnUTC DATETIME DEFAULT GETUTCDATE(),
+    DocumentFile VARBINARY(MAX),
+    DocumentContentType NVARCHAR(100)
+);
+
+CREATE TABLE Companies (
+    CompanyId INT IDENTITY(1,1) PRIMARY KEY,
+    CompanyName NVARCHAR(150) NOT NULL,
+    Industry NVARCHAR(100),
+    Location NVARCHAR(100),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    IsCompanyVerified BIT DEFAULT 0
+);
+
+CREATE TABLE Applications (
+    ApplicationId INT IDENTITY(1,1) PRIMARY KEY,
+    JobId INT NOT NULL,
+    UserId INT NOT NULL,
+    ApplicationStatus NVARCHAR(50) DEFAULT 'Applied',
+    AppliedDate DATETIME DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Applications_Jobs
+    FOREIGN KEY (JobId) REFERENCES Jobs(JobId),
+
+    CONSTRAINT FK_Applications_Users
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
