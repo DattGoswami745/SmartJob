@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using SmartJobSystem.Server.Data;
@@ -10,12 +11,14 @@ namespace SmartJobAPI.Helpers
         private readonly HttpClient _http;
         private readonly DbHelper _db;
         private readonly IConfiguration _config;
+        private readonly ILogger<GeminiChatHelper> _logger;
 
-        public GeminiChatHelper(HttpClient http, DbHelper db, IConfiguration config)
+        public GeminiChatHelper(HttpClient http, DbHelper db, IConfiguration config, ILogger<GeminiChatHelper> logger)
         {
             _http = http;
             _db = db;
             _config = config;
+            _logger = logger;
         }
 
         public async Task<string> Ask(List<ChatMessage> conversation, string systemContext = "")
@@ -68,9 +71,8 @@ namespace SmartJobAPI.Helpers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"GEMINI CHAT ERROR ({response.StatusCode}):");
-                    Console.WriteLine(result);
-                    return $"AI API Error ({response.StatusCode}): {result}";
+                    _logger.LogError("GEMINI CHAT ERROR ({StatusCode}): {Result}", response.StatusCode, result);
+                    return $"AI Chat Error ({response.StatusCode})";
                 }
 
                 using var doc = JsonDocument.Parse(result);
@@ -84,9 +86,10 @@ namespace SmartJobAPI.Helpers
 
                 return text ?? "Empty response.";
             }
-            catch
+            catch (Exception ex)
             {
-                return "AI error occurred.";
+                _logger.LogError(ex, "GEMINI CHAT PROCESSING FAILED");
+                return "AI error occurred. Please try again later.";
             }
         }
     }

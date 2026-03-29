@@ -287,7 +287,7 @@ export default {
         loadingProfile.value = true
         profileData.value = await getUserProfileForCompany(app.userId)
       } catch (err) {
-        console.error("Profile not found or error", err)
+        handleError(err, "Profile Error")
       } finally {
         loadingProfile.value = false
       }

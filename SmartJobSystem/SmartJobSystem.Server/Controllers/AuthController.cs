@@ -13,12 +13,14 @@ namespace SmartJobAPI.Controllers
         private readonly IConfiguration _config;
         private readonly IEmailService _emailService;
         private readonly DbHelper _db;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IConfiguration config, IEmailService emailService, DbHelper db)
+        public AuthController(IConfiguration config, IEmailService emailService, DbHelper db, ILogger<AuthController> logger)
         {
             _config = config;
             _emailService = emailService;
             _db = db;
+            _logger = logger;
         }
 
         // ================= LOGIN =================
@@ -46,9 +48,8 @@ namespace SmartJobAPI.Controllers
 
             if (enteredHash != dbHash)
             {
-                // Debugging (Remove in production)
-                Console.WriteLine($"Login failed for {dto.Email}: Hash mismatch.");
-                return Unauthorized(new { message = "Invalid password" });
+                _logger.LogWarning("Login failed for {Email}: Password hash mismatch.", dto.Email);
+                return Unauthorized(new { message = "Invalid email or password" });
             }
 
             int userId = (int)(reader["UserId"] ?? 0);
@@ -142,10 +143,7 @@ namespace SmartJobAPI.Controllers
                 }
                 catch (Exception profEx)
                 {
-                    // Log but maybe don't fail signup completely? 
-                    // Or actually, it's better to know why it failed.
-                    Console.WriteLine($"UserProfile creation failed for UserId {userId}: {profEx.Message}");
-                    // We'll continue for now so they can at least verify email
+                    _logger.LogError(profEx, "UserProfile creation failed for UserId {UserId}", userId);
                 }
 
                 // 📧 Send Email
@@ -171,12 +169,10 @@ namespace SmartJobAPI.Controllers
                 }
                 catch (Exception emailEx)
                 {
-                    // Log the error but don't fail the signup if the user is already created
-                    // Better to let them "Resend OTP" than failing the whole process
-                    Console.WriteLine($"Email sending failed for {dto.Email}: {emailEx.Message}");
+                    _logger.LogError(emailEx, "Verification email sending failed for {Email}", dto.Email);
                     return Ok(new
                     {
-                        message = "Signup successful, but we couldn't send the verification email. Please use the 'Resend OTP' option.",
+                        message = "Signup successful, but we couldn't send the verification email. Please try the 'Resend OTP' option in a few minutes.",
                         userId = userId,
                         emailError = true
                     });
@@ -190,7 +186,7 @@ namespace SmartJobAPI.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Signup error: {ex}");
+                _logger.LogError(ex, "Signup error for email: {Email}", dto.Email);
                 return StatusCode(500, new { message = "An error occurred during signup. Please try again later." });
             }
         }
@@ -331,8 +327,8 @@ namespace SmartJobAPI.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Resend OTP error: {ex}");
-                return StatusCode(500, new { message = $"Internal Error during Resend OTP: {ex.Message}" });
+                _logger.LogError(ex, "Resend OTP error for {Email}", dto.Email);
+                return StatusCode(500, new { message = "Failed to resend verification code. Please try again later." });
             }
         }
 

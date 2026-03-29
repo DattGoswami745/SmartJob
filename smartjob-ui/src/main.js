@@ -22,6 +22,8 @@ document.body.classList.add("theme-light")
    🚀 CREATE APP
    =============================== */
 
-createApp(App)
-   .use(router)
-   .mount("#app")
+import { handleError } from "@/utils/error-handler"
+ 
+ const app = createApp(App)
+ app.config.errorHandler = (err) => handleError(err, 'Global Error')
+ app.use(router).mount("#app")

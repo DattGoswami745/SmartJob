@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Mail;
 using SmartJobSystem.Server.Data;
@@ -8,11 +9,13 @@ namespace SmartJobSystem.Server.Helpers
     {
         private readonly IConfiguration _config;
         private readonly DbHelper _db;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration config, DbHelper db)
+        public EmailService(IConfiguration config, DbHelper db, ILogger<EmailService> _logger)
         {
             _config = config;
             _db = db;
+            this._logger = _logger;
         }
 
         public async Task SendEmailAsync(string toEmail, string subject, string body)
@@ -34,8 +37,7 @@ namespace SmartJobSystem.Server.Helpers
 
             if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUser))
             {
-                // Fallback or log if not configured
-                Console.WriteLine($"Email to {toEmail} NOT SENT (SMTP not configured): {subject} - {body}");
+                _logger.LogWarning("Email to {Email} NOT SENT (SMTP not configured): {Subject}", toEmail, subject);
                 return;
             }
 
@@ -75,12 +77,7 @@ namespace SmartJobSystem.Server.Helpers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[EMAIL ERROR] Failed to send email to {toEmail} - Subject: {subject}");
-                Console.WriteLine($"[EMAIL EXCEPTION] {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                     Console.WriteLine($"[EMAIL INNER EXCEPTION] {ex.InnerException.Message}");
-                }
+                _logger.LogError(ex, "Failed to send email to {Email} - Subject: {Subject}", toEmail, subject);
                 throw; // Rethrow to let the caller handle it if needed
             }
         }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using SmartJobAPI.Models;
@@ -11,11 +12,13 @@ namespace SmartJobAPI.Helpers
         private readonly HttpClient _http = new HttpClient();
         private readonly DbHelper _db;
         private readonly IConfiguration _config;
+        private readonly ILogger<GeminiHelper> _logger;
 
-        public GeminiHelper(DbHelper db, IConfiguration config)
+        public GeminiHelper(DbHelper db, IConfiguration config, ILogger<GeminiHelper> logger)
         {
             _db = db;
             _config = config;
+            _logger = logger;
         }
 
         public async Task<AiResumeResult> Generate(ProfileDto profile, List<string> sections)
@@ -67,14 +70,12 @@ Location: {profile.PreferredLocation}
 
                 var result = await response.Content.ReadAsStringAsync();
 
-                Console.WriteLine("RAW AI RESPONSE:");
-                Console.WriteLine(result);
+                _logger.LogDebug("RAW AI RESPONSE: {Result}", result);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"GEMINI RESUME ERROR ({response.StatusCode}):");
-                    Console.WriteLine(result);
-                    return GetFallback($"API Error ({response.StatusCode}): {result}");
+                    _logger.LogError("GEMINI RESUME ERROR ({StatusCode}): {Result}", response.StatusCode, result);
+                    return GetFallback($"AI Service Error");
                 }
 
                 using var doc = JsonDocument.Parse(result);
@@ -108,17 +109,16 @@ Location: {profile.PreferredLocation}
             }
             catch (Exception ex)
             {
-                Console.WriteLine("AI FAILED:");
-                Console.WriteLine(ex.Message);
-                return GetFallback(ex.Message);
+                _logger.LogError(ex, "AI RESUME GENERATION FAILED");
+                return GetFallback("Internal processing error");
             }
         }
 
         private AiResumeResult GetFallback(string reason)
         {
             var res = new AiResumeResult();
-            res.sections["Summary"] = new List<string> { "ERROR: " + reason };
-            res.sections["Skills"] = new List<string> { "Check Console" };
+            res.sections["Summary"] = new List<string> { "Note: " + reason };
+            res.sections["Skills"] = new List<string> { "Please complete manually" };
             return res;
         }
     }
