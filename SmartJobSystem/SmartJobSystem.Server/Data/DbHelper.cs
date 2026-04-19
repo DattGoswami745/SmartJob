@@ -26,6 +26,50 @@ namespace SmartJobSystem.Server.Data
             return result?.ToString();
         }
 
+        public async Task<List<object>> GetAllParametersAsync()
+        {
+            var parameters = new List<object>();
+            using var con = GetConnection();
+            using var cmd = new SqlCommand("SELECT ParamKey, ParamValue, Description FROM Parameters ORDER BY ParamKey", con);
+
+            await con.OpenAsync();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                parameters.Add(new
+                {
+                    ParamKey = reader.GetString(0),
+                    ParamValue = reader.GetString(1),
+                    Description = reader.IsDBNull(2) ? "" : reader.GetString(2)
+                });
+            }
+            return parameters;
+        }
+
+        public async Task<bool> UpdateParameterAsync(string key, string value, string description)
+        {
+            using var con = GetConnection();
+            using var cmd = new SqlCommand(@"
+                IF EXISTS (SELECT 1 FROM Parameters WHERE ParamKey = @ParamKey)
+                BEGIN
+                    UPDATE Parameters 
+                    SET ParamValue = @ParamValue, Description = @Description
+                    WHERE ParamKey = @ParamKey
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO Parameters (ParamKey, ParamValue, Description)
+                    VALUES (@ParamKey, @ParamValue, @Description)
+                END", con);
+
+            cmd.Parameters.Add("@ParamKey", SqlDbType.NVarChar).Value = key;
+            cmd.Parameters.Add("@ParamValue", SqlDbType.NVarChar).Value = value;
+            cmd.Parameters.Add("@Description", SqlDbType.NVarChar).Value = description ?? "";
+
+            await con.OpenAsync();
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
         /* ===================== CONNECTION ===================== */
 
         public SqlConnection GetConnection()

@@ -138,7 +138,7 @@ export async function updateProfile(profile) {
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify({
-      Skills: Array.isArray(profile.skills) ? profile.skills : (profile.skills ? profile.skills.split(",").map(s => s.trim()).filter(x => x) : []),
+      Skills: Array.isArray(profile.skills) ? profile.skills.join(",") : (profile.skills || ""),
       Education: profile.education,
       ExperienceYears: profile.experienceYears,
       PreferredLocation: profile.preferredLocation,
@@ -642,6 +642,24 @@ export async function decryptText(text) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text })
+  })
+  return handleResponse(res)
+}
+
+/* ===================== PARAMETERS ===================== */
+export async function getParameters() {
+  const res = await fetch(`${BASE}/parameters`, {
+    credentials: "include"
+  })
+  return handleResponse(res)
+}
+
+export async function updateParameter(key, data) {
+  const res = await fetch(`${BASE}/parameters/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data)
   })
   return handleResponse(res)
 }

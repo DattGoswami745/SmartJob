@@ -37,6 +37,7 @@ import CompanyReports from "@/views/company/Reports.vue"
 import CompanyPlacements from "@/views/company/Placements.vue"
 import CompanyVerification from "@/views/company/Verification.vue"
 import SecurityTool from "@/views/SecurityTool.vue"
+import Parameters from "@/views/Parameters.vue"
 
 /* 🔐 API base */
 const BASE = "https://localhost:7269/api"
@@ -62,6 +63,10 @@ const routes = [
   {
     path: "/security-tool",
     component: SecurityTool
+  },
+  {
+    path: "/parameters",
+    component: Parameters
   },
 
   /* NORMAL USER ROUTES */
@@ -132,8 +137,8 @@ router.beforeEach(async (to, from, next) => {
     return next("/login")
   }
 
-  // Allow security tool page even if not logged in
-  if (isSecurityToolPage) {
+  // Allow security tool and parameters page even if not logged in
+  if (isSecurityToolPage || to.path === "/parameters") {
     return next()
   }
 
